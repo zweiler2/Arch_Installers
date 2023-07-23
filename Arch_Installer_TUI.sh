@@ -110,6 +110,41 @@ information_gathering() {
 	KEYBOARD_LAYOUT=$(dialog --stdout --title "Keyboard layout" --menu "Select your desired keyboard layout" 0 0 0 "${menu_list[@]}")
 	menu_list=()
 
+	### Ask for linux kernel ###
+	KERNEL=$(dialog --stdout --title "SWAP" --menu "How big do you want your swapfile?\n(8GB is recommended)" 8 0 0 \
+		1 "linux" \
+		2 "linux-lts" \
+		3 "linux-zen" \
+		4 "linux-hardened" \
+		5 "linux-rt" \
+		6 "linux-rt-lts")
+	case $KERNEL in
+	1)
+		KERNEL="linux"
+		NVIDIA_PACKAGE="nvidia"
+		;;
+	2)
+		KERNEL="linux-lts"
+		NVIDIA_PACKAGE="nvidia-lts"
+		;;
+	3)
+		KERNEL="linux-zen"
+		NVIDIA_PACKAGE="nvidia-dkms"
+		;;
+	4)
+		KERNEL="linux-hardened"
+		NVIDIA_PACKAGE="nvidia-dkms"
+		;;
+	5)
+		KERNEL="linux-rt"
+		NVIDIA_PACKAGE="nvidia-dkms"
+		;;
+	6)
+		KERNEL="linux-rt-lts"
+		NVIDIA_PACKAGE="nvidia-dkms"
+		;;
+	esac
+
 	### Ask for SWAP file ###
 	if dialog --title "SWAP" --yesno "Do you want to make a swapfile?\n(This is generally recommended to do)" 6 41; then
 		CREATESWAPFILE=true
@@ -541,7 +576,7 @@ base_os_install() {
 	fi
 
 	### Installing base packages ###
-	pacstrap -K /mnt base base-devel linux linux-headers linux-firmware sudo bash-completion mtools dosfstools fwupd power-profiles-daemon cpupower btrfs-progs pacman-contrib
+	pacstrap -K /mnt base base-devel "$KERNEL" "${KERNEL}"-headers linux-firmware sudo bash-completion mtools dosfstools fwupd power-profiles-daemon cpupower btrfs-progs pacman-contrib
 
 	### Generate fstab ###
 	printf "\nBase system installation done, generating fstab...\n\n"
@@ -711,8 +746,8 @@ Operation=Install
 Operation=Upgrade
 Operation=Remove
 Type=Package
-Target=nvidia
-Target=linux
+Target=$NVIDIA_PACKAGE
+Target=$KERNEL
 # Change the linux part above and in the Exec line if a different kernel is used
 
 [Action]
@@ -720,7 +755,7 @@ Description=Update NVIDIA module in initcpio
 Depends=mkinitcpio
 When=PostTransaction
 NeedsTargets
-Exec=/bin/sh -c 'while read -r trg; do case trg in linux) exit 0; esac; done; /usr/bin/mkinitcpio -P'
+Exec=/bin/sh -c 'while read -r trg; do case trg in $KERNEL) exit 0; esac; done; /usr/bin/mkinitcpio -P'
 EOF
 		else
 			echo "Installing nvidia open source driver..."

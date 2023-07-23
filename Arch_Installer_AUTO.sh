@@ -82,6 +82,9 @@ information_gathering() {
 	### Set keyboard layout ###
 	KEYBOARD_LAYOUT="de-latin1"
 
+	### Ask for linux kernel ###
+	KERNEL="linux"
+
 	### Setup SWAP file in MB ###
 	CREATESWAPFILE=true
 	SWAPSIZE=8192
@@ -405,7 +408,7 @@ base_os_install() {
 	fi
 
 	### Installing base packages ###
-	pacstrap -K /mnt base base-devel linux linux-headers linux-firmware sudo bash-completion mtools dosfstools fwupd power-profiles-daemon cpupower btrfs-progs pacman-contrib
+	pacstrap -K /mnt base base-devel "$KERNEL" "${KERNEL}"-headers linux-firmware sudo bash-completion mtools dosfstools fwupd power-profiles-daemon cpupower btrfs-progs pacman-contrib
 
 	### Generate fstab ###
 	printf "\nBase system installation done, generating fstab...\n\n"
@@ -575,8 +578,8 @@ Operation=Install
 Operation=Upgrade
 Operation=Remove
 Type=Package
-Target=nvidia
-Target=linux
+Target=$NVIDIA_PACKAGE
+Target=$KERNEL
 # Change the linux part above and in the Exec line if a different kernel is used
 
 [Action]
@@ -584,7 +587,7 @@ Description=Update NVIDIA module in initcpio
 Depends=mkinitcpio
 When=PostTransaction
 NeedsTargets
-Exec=/bin/sh -c 'while read -r trg; do case trg in linux) exit 0; esac; done; /usr/bin/mkinitcpio -P'
+Exec=/bin/sh -c 'while read -r trg; do case trg in $KERNEL) exit 0; esac; done; /usr/bin/mkinitcpio -P'
 EOF
 		else
 			echo "Installing nvidia open source driver..."
