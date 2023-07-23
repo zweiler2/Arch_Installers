@@ -111,7 +111,7 @@ information_gathering() {
 	menu_list=()
 
 	### Ask for linux kernel ###
-	KERNEL=$(dialog --stdout --title "SWAP" --menu "How big do you want your swapfile?\n(8GB is recommended)" 8 0 0 \
+	KERNEL=$(dialog --stdout --title "Kernel" --menu "Which linux kernel do you want to use?" 7 42 0 \
 		1 "linux" \
 		2 "linux-lts" \
 		3 "linux-zen" \
