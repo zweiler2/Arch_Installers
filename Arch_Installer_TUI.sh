@@ -103,7 +103,7 @@ information_gathering() {
 	### Ask for main language ###
 	make_language_menu "$LANGUAGES_ALL"
 	MAIN_LANGUAGE=$(dialog --stdout --title "Main language" --menu "Select your desired main language" 0 37 0 "${language_menu_list[@]}")
-	menu_list=()
+	language_menu_list=()
 
 	### Ask for keyboard layout ###
 	make_menu "$(localectl list-keymaps --no-pager)"
