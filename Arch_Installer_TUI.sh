@@ -128,6 +128,8 @@ information_gathering() {
 		5) SWAPSIZE=16384 ;;
 		6) SWAPSIZE=32768 ;;
 		esac
+	else
+		CREATESWAPFILE=false
 	fi
 
 	### Ask for multilib installation ###
