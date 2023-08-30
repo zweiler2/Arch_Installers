@@ -930,10 +930,8 @@ post_install() {
 		arch-chroot /mnt pacman -S --noconfirm plymouth
 		sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/&splash /' /mnt/etc/default/grub
 		sed -i 's/HOOKS=(base udev /&plymouth /' /mnt/etc/mkinitcpio.conf
-		{
-			echo '[Daemon]'
-			echo 'Theme=bgrt'
-		} >/mnt/etc/plymouth/plymouthd.conf
+		echo "[Daemon]" >/mnt/etc/plymouth/plymouthd.conf
+		echo "Theme=bgrt" >>/mnt/etc/plymouth/plymouthd.conf
 		arch-chroot /mnt mkinitcpio -P
 		arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
 	fi
