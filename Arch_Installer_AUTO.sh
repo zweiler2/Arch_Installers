@@ -693,6 +693,13 @@ additional_packages() {
 
 post_install() {
 	printf "\nPostinstall begins now"
+
+	### Fix USB file transfer progress not showing correctly ###
+	mkdir /mnt/etc/sysctl.d
+	touch /mnt/etc/sysctl.d/USB.conf
+	echo "vm.dirty_background_bytes = 16777216" >>/mnt/etc/sysctl.d/USB.conf
+	echo "vm.dirty_bytes = 50331648" >>/mnt/etc/sysctl.d/USB.conf
+
 	if $INSTALL_BLUETOOTH; then
 		arch-chroot /mnt pacman -S --noconfirm bluez bluez-utils
 		arch-chroot /mnt systemctl enable bluetooth.service
