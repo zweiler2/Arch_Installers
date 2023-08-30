@@ -858,7 +858,7 @@ audio_install() {
 
 additional_packages() {
 	printf "\nInstalling additional_packages...\n"
-	arch-chroot /mnt pacman -S --noconfirm --needed nano vim openssh htop wget iwd wireless_tools wpa_supplicant smartmontools xdg-utils neofetch lshw firefox git p7zip unrar unarchiver lzop lrzip
+	arch-chroot /mnt pacman -S --noconfirm --needed nano vim openssh htop wget iwd wireless_tools wpa_supplicant smartmontools xdg-utils neofetch lshw firefox git p7zip unrar unarchiver lzop lrzip libva libva-utils llvm
 }
 
 post_install() {
