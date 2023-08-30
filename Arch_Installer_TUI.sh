@@ -46,11 +46,44 @@ check_system() {
 	fi
 }
 
-check_mount() {
-	if [[ "$1" != 0 ]]; then
-		echo Error: Something went wrong when mounting "$2" partition. Please try again!
-		read -r -p "Press Enter to exit..."
-		exit 1
+mounting() {
+	### Mounting root partition ###
+	if [ "$1" = "$ROOT_PARTITION" ]; then
+		if ! grep "$ROOT_PARTITION" /etc/mtab; then
+			if ! mount "$ROOT_PARTITION" /mnt; then
+				echo "Error: Something went wrong when mounting root partition ($ROOT_PARTITION). Please try again!"
+				read -r -p "Press Enter to exit..."
+				exit 1
+			else
+				echo "Mounted $ROOT_PARTITION successfully"
+			fi
+		fi
+	fi
+
+	### Mounting home partition ###
+	if [ "$1" = "$HOME_PARTITION" ]; then
+		if ! grep "$HOME_PARTITION" /etc/mtab; then
+			if ! mount --mkdir "$HOME_PARTITION" /mnt/home; then
+				echo "Error: Something went wrong when mounting home partition ($HOME_PARTITION). Please try again!"
+				read -r -p "Press Enter to exit..."
+				exit 1
+			else
+				echo "Mounted $HOME_PARTITION successfully"
+			fi
+		fi
+	fi
+
+	### Mounting efi partition ###
+	if [ "$1" = "$EFI_PARTITION" ]; then
+		if ! grep "$EFI_PARTITION" /etc/mtab; then
+			if ! mount --mkdir "$EFI_PARTITION" /mnt/efi; then
+				echo "Error: Something went wrong when mounting efi partition ($EFI_PARTITION). Please try again!"
+				read -r -p "Press Enter to exit..."
+				exit 1
+			else
+				echo "Mounted $EFI_PARTITION successfully"
+			fi
+		fi
 	fi
 }
 
@@ -669,34 +702,37 @@ auto_partitioning() {
 
 base_os_install() {
 	### Mounting filesystems ###
-	mount "${ROOT_PARTITION}" /mnt
-	check_mount $? root
+	mounting "$ROOT_PARTITION"
 	if ! $EXT4; then
 		btrfs sub cr /mnt/@
 		btrfs sub cr /mnt/@tmp
 		btrfs sub cr /mnt/@log
 		btrfs sub cr /mnt/@pkg
 		btrfs sub cr /mnt/@snapshots
+		if ! $CREATEHOMEPARTITION; then
+			btrfs sub cr /mnt/@home
+		fi
 		if $CREATESWAPFILE; then
 			btrfs sub cr /mnt/@swap
 		fi
 		umount /mnt
 		mount -o subvol=@ "${ROOT_PARTITION}" /mnt
-		mkdir -p /mnt/{efi,home,var/log,var/cache/pacman/pkg,tmp,swap}
+		mkdir -p /mnt/{efi,var/log,var/cache/pacman/pkg,tmp,swap}
 		mount -o subvol=@log "${ROOT_PARTITION}" /mnt/var/log
 		mount -o subvol=@pkg "${ROOT_PARTITION}" /mnt/var/cache/pacman/pkg/
 		mount -o subvol=@tmp "${ROOT_PARTITION}" /mnt/tmp
+		if ! $CREATEHOMEPARTITION; then
+            mount --mkdir -o subvol=@home "${ROOT_PARTITION}" /mnt/home
+        fi
 		if $CREATESWAPFILE; then
 			mount -o subvol=@swap "${ROOT_PARTITION}" /mnt/swap
 		fi
 	fi
 	if $EFI_SYSTEM; then
-		mount --mkdir "${EFI_PARTITION}" /mnt/efi
-		check_mount $? efi
+		mounting "$EFI_PARTITION"
 	fi
 	if $CREATEHOMEPARTITION; then
-		mount --mkdir "${HOME_PARTITION}" /mnt/home
-		check_mount $? home
+		mounting "$HOME_PARTITION"
 	fi
 
 	### Installing base packages ###
