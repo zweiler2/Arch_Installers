@@ -112,6 +112,13 @@ check_internet_connection() {
 	fi
 }
 
+exit_confirmation() {
+	if dialog --title "EXIT" --defaultno --yesno "Are you sure you want to exit now?" 6 41; then
+		echo "Exiting..."
+		exit 1
+	fi
+}
+
 make_menu "$(lsblk -lno name,size,model,serial,type | grep disk | sed s/disk//g | sed 's/  */ /g')"
 DEVICELIST_ARRAY=("${menu_list[@]}")
 menu_list=()
@@ -123,38 +130,98 @@ menu_list=()
 information_gathering() {
 	### Ask for keyboard layout while using the installer ###
 	make_menu "$(localectl list-keymaps --no-pager)"
-	TEMP_LANG=$(dialog --stdout --title "Keyboard layout" --menu "Select a keyboard layout to use while using the installer" 0 0 0 "${menu_list[@]}")
+	while true; do
+		if TEMP_KB_LAYOUT=$(dialog --stdout --title "Keyboard layout" --menu "Select a keyboard layout to use while using the installer" 0 0 0 "${menu_list[@]}"); then
+			if [ -n "$TEMP_KB_LAYOUT" ]; then
+				break
+			else
+				dialog --title "Keyboard layout" --msgbox "You didn't select a layout.\nPlease do so now." 6 31
+			fi
+		else
+			exit_confirmation
+		fi
+	done
 	menu_list=()
-	loadkeys "$TEMP_LANG"
+	loadkeys "$TEMP_KB_LAYOUT"
 
 	### Ask for the timezone ###
 	make_menu "$(timedatectl list-timezones --no-pager)"
-	TIMEZONE=$(dialog --stdout --title "Timezone" --menu "Select your timezone" 0 0 0 "${menu_list[@]}")
+	while true; do
+		if TIMEZONE=$(dialog --stdout --title "Timezone" --menu "Select your timezone" 0 0 0 "${menu_list[@]}"); then
+			if [ -n "$TIMEZONE" ]; then
+				break
+			else
+				dialog --title "Timezone" --msgbox "You didn't select a timezone.\nPlease do so now." 6 33
+			fi
+		else
+			exit_confirmation
+		fi
+	done
 	menu_list=()
 
 	### Ask for languages ###
 	make_checklist "$(cut </etc/locale.gen -c2- | tail -n +18 | sed '$ d' | sed 's/ *$//')"
-	LANGUAGES_ALL=$(dialog --stdout --separate-output --title "Language" --checklist "Select your desired languages" 0 0 0 "${check_list[@]}")
+	while true; do
+		if LANGUAGES_ALL=$(dialog --stdout --separate-output --title "Language" --checklist "Select your desired languages" 0 0 0 "${check_list[@]}"); then
+			if [ -n "$LANGUAGES_ALL" ]; then
+				break
+			else
+				dialog --title "Language" --msgbox "You didn't select at least one language.\nPlease do so now." 6 44
+			fi
+		else
+			exit_confirmation
+		fi
+	done
 	check_list=()
 
 	### Ask for main language ###
 	make_language_menu "$LANGUAGES_ALL"
-	MAIN_LANGUAGE=$(dialog --stdout --title "Main language" --menu "Select your desired main language" 0 37 0 "${language_menu_list[@]}")
+	while true; do
+		if MAIN_LANGUAGE=$(dialog --stdout --title "Main language" --menu "Select your desired main language" 0 37 0 "${language_menu_list[@]}"); then
+			if [ -n "$MAIN_LANGUAGE" ]; then
+				break
+			else
+				dialog --title "Main language" --msgbox "You didn't select a main language.\nPlease do so now." 6 38
+			fi
+		else
+			exit_confirmation
+		fi
+	done
 	language_menu_list=()
 
 	### Ask for keyboard layout ###
 	make_menu "$(localectl list-keymaps --no-pager)"
-	KEYBOARD_LAYOUT=$(dialog --stdout --title "Keyboard layout" --menu "Select your desired keyboard layout" 0 0 0 "${menu_list[@]}")
+	while true; do
+		if KEYBOARD_LAYOUT=$(dialog --stdout --title "Keyboard layout" --menu "Select your desired keyboard layout" 0 0 0 "${menu_list[@]}"); then
+			if [ -n "$KEYBOARD_LAYOUT" ]; then
+				break
+			else
+				dialog --title "Keyboard layout" --msgbox "You didn't select a layout.\nPlease do so now." 6 31
+			fi
+		else
+			exit_confirmation
+		fi
+	done
 	menu_list=()
 
 	### Ask for linux kernel ###
-	KERNEL=$(dialog --stdout --title "Kernel" --menu "Which linux kernel do you want to use?" 7 42 0 \
-		1 "linux" \
-		2 "linux-lts" \
-		3 "linux-zen" \
-		4 "linux-hardened" \
-		5 "linux-rt" \
-		6 "linux-rt-lts")
+	while true; do
+		if KERNEL=$(dialog --stdout --title "Kernel" --menu "Which linux kernel do you want to use?" 7 42 0 \
+			1 "linux" \
+			2 "linux-lts" \
+			3 "linux-zen" \
+			4 "linux-hardened" \
+			5 "linux-rt" \
+			6 "linux-rt-lts"); then
+			if [ -n "$KERNEL" ]; then
+				break
+			else
+				dialog --title "Kernel" --msgbox "You didn't select a kernel.\nPlease do so now." 6 31
+			fi
+		else
+			exit_confirmation
+		fi
+	done
 	case $KERNEL in
 	1)
 		KERNEL="linux"
@@ -185,13 +252,22 @@ information_gathering() {
 	### Ask for SWAP file ###
 	if dialog --title "SWAP" --yesno "Do you want to make a swapfile?\n(This is generally recommended to do)" 6 41; then
 		CREATESWAPFILE=true
-		SWAPSIZE=$(dialog --stdout --title "SWAP" --menu "How big do you want your swapfile?\n(8GB is recommended)" 8 0 0 \
-			1 "1GB" \
-			2 "2GB" \
-			3 "4GB" \
-			4 "8GB" \
-			5 "16GB" \
-			6 "32GB")
+		while true; do
+			if SWAPSIZE=$(dialog --stdout --title "SWAP" --menu "How big do you want your swapfile?\n(8GB is recommended)" 8 0 0 \
+				1 "1GB" \
+				2 "2GB" \
+				3 "4GB" \
+				4 "8GB" \
+				5 "16GB"); then
+				if [ -n "$SWAPSIZE" ]; then
+					break
+				else
+					dialog --title "SWAP" --msgbox "You didn't select a size.\nPlease do so now." 6 29
+				fi
+			else
+				exit_confirmation
+			fi
+		done
 		case $SWAPSIZE in
 		1) SWAPSIZE=1024 ;;
 		2) SWAPSIZE=2048 ;;
@@ -256,9 +332,19 @@ information_gathering() {
 	### Ask for AUR helper ###
 	if dialog --title "AUR helper" --yesno "Do you want to have an AUR helper?" 5 38; then
 		INSTALL_AUR_HELPER=true
-		AUR_HELPER=$(dialog --stdout --title "AUR helper" --menu "Which AUR helper do you want to have?\n" 8 41 0 \
-			1 "Paru" \
-			2 "Yay")
+		while true; do
+			if AUR_HELPER=$(dialog --stdout --title "AUR helper" --menu "Which AUR helper do you want to have?\n" 8 41 0 \
+				1 "Paru" \
+				2 "Yay"); then
+				if [ -n "$AUR_HELPER" ]; then
+					break
+				else
+					dialog --title "AUR helper" --msgbox "You didn't select one.\nPlease do so now." 6 29
+				fi
+			else
+				exit_confirmation
+			fi
+		done
 	else
 		INSTALL_AUR_HELPER=false
 	fi
