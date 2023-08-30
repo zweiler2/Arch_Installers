@@ -339,17 +339,17 @@ information_gathering() {
 		bash
 
 		### Ask for root partition ###
-		ROOT_PARTITION=$(dialog --stdout --title "Select partition" --menu "Select your root partition" 0 0 0 "${PARTLIST_ARRAY[@]}")
+		ROOT_PARTITION=$(dialog --stdout --title "Select ROOT partition" --menu "Select your root partition" 0 0 0 "${PARTLIST_ARRAY[@]}")
 		ROOT_PARTITION="/dev/${ROOT_PARTITION}"
 
 		### Ask for efi partition ###
 		if $EFI_SYSTEM; then
 			while true; do
-				EFI_PARTITION=$(dialog --stdout --title "Select partition" --menu "Select your root partition" 0 0 0 "${PARTLIST_ARRAY[@]}")
+				EFI_PARTITION=$(dialog --stdout --title "Select EFI partition" --menu "Select your efi partition" 0 0 0 "${PARTLIST_ARRAY[@]}")
 				EFI_PARTITION="/dev/${EFI_PARTITION}"
 				if [[ "$ROOT_PARTITION" != "$EFI_PARTITION" ]]; then
 					break
-				else
+				elif [[ "$ROOT_PARTITION" = "$EFI_PARTITION" ]]; then
 					dialog --title "Partitioning" --msgbox "This is your root partition. Choose another one..." 0 0
 				fi
 			done
@@ -359,7 +359,7 @@ information_gathering() {
 		if dialog --title "Partitioning" --yesno "Did you make a seperate /home partition?" 5 45; then
 			CREATEHOMEPARTITION=true
 			while true; do
-				HOME_PARTITION=$(dialog --stdout --title "Select partition" --menu "Select your root partition" 0 0 0 "${PARTLIST_ARRAY[@]}")
+				HOME_PARTITION=$(dialog --stdout --title "Select HOME partition" --menu "Select your home partition" 0 0 0 "${PARTLIST_ARRAY[@]}")
 				HOME_PARTITION="/dev/${HOME_PARTITION}"
 				if [[ "$HOME_PARTITION" != "$ROOT_PARTITION" && "$HOME_PARTITION" != "$EFI_PARTITION" ]]; then
 					break
@@ -369,6 +369,8 @@ information_gathering() {
 					dialog --title "Partitioning" --msgbox "This is your efi partition. Choose another one..." 5 55
 				fi
 			done
+		else
+			CREATEHOMEPARTITION=false
 		fi
 	else
 		MANUAL_PARTITIONING=false
