@@ -1019,10 +1019,10 @@ additional_drivers() {
 		elif $INSTALL_AUR_HELPER; then
 			case $AUR_HELPER in
 			1)
-				arch-chroot /mnt paru -S --noconfirm rtl88xxau-aircrack-dkms-git
+				arch-chroot /mnt su "$ARCHUSER" -c "paru -S --noconfirm rtl88xxau-aircrack-dkms-git"
 				;;
 			2)
-				arch-chroot /mnt yay -S --noconfirm rtl88xxau-aircrack-dkms-git
+				arch-chroot /mnt su "$ARCHUSER" -c "yay -S --noconfirm rtl88xxau-aircrack-dkms-git"
 				;;
 			esac
 		else
