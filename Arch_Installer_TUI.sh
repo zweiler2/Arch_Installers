@@ -274,7 +274,6 @@ information_gathering() {
 		3) SWAPSIZE=4096 ;;
 		4) SWAPSIZE=8192 ;;
 		5) SWAPSIZE=16384 ;;
-		6) SWAPSIZE=32768 ;;
 		esac
 	else
 		CREATESWAPFILE=false
