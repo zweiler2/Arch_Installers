@@ -1,11 +1,48 @@
 #!/bin/bash
 # Arch Linux Install Script by zweiler2 v1 Tui Edition
 
-check_for_efi() {
+check_system() {
+	### Check if EFI system ###
 	if ls /sys/firmware/efi/efivars >/dev/null 2>&1; then
 		EFI_SYSTEM=true
 	else
 		EFI_SYSTEM=false
+	fi
+
+	### Check if NVIDIA GPU user ###
+	if [[ "$(lspci -v | grep VGA | sed -nE "s/.*(NVIDIA) .*/\1/p")" = "NVIDIA" ]]; then
+		NVIDIA_USER=true
+		if dialog --cr-wrap --title "NVIDIA GPU" --yesno "NVIDIA GPU found. These graphics cards were found on your system:\n\n$(lspci -k | grep -A 2 -E "(VGA|3D)")\n\nDo you want to install the nvidia proprietary driver?\nBy selecting \"no\" the open source \"nouveau\" driver will be installed." 0 0; then
+			NVIDIA_PROPRIETARY=true
+		else
+			NVIDIA_PROPRIETARY=false
+		fi
+	else
+		NVIDIA_USER=false
+	fi
+
+	## Check if AMD GPU user ###
+	if [[ "$(lspci -v | grep VGA | sed -nE "s/.*(AMD) .*/\1/p")" = "AMD" ]]; then
+		AMD_USER=true
+		if dialog --cr-wrap --title "AMD GPU" --yesno "AMD GPU found. These graphics cards were found on your system:\n\n$(lspci -k | grep -A 2 -E "(VGA|3D)")\n\nDo you want to install the old non-Gallium3D mesa drivers (mesa-amber/mesa 21.3.9).\nSelect yes only if you have a really old GPU." 0 0; then
+			MESA_AMBER=true
+		else
+			MESA_AMBER=false
+		fi
+	else
+		AMD_USER=false
+	fi
+
+	### Check if Intel GPU user ###
+	if [[ "$(lspci -v | grep VGA | sed -nE "s/.*(Intel) .*/\1/p")" = "Intel" ]]; then
+		INTEL_USER=true
+		if dialog --cr-wrap --title "Intel GPU" --yesno "Intel GPU found. These graphics cards were found on your system:\n\n$(lspci -k | grep -A 2 -E "(VGA|3D)")\n\nDo you want to install the old non-Gallium3D mesa drivers (mesa-amber/mesa 21.3.9).\nSelect yes only if you have a really old GPU." 0 0; then
+			MESA_AMBER=true
+		else
+			MESA_AMBER=false
+		fi
+	else
+		INTEL_USER=false
 	fi
 }
 
@@ -728,9 +765,10 @@ EOF
 	if [[ "$(cat /sys/class/dmi/id/product_name)" == "VirtualBox" || "$(cat /sys/class/dmi/id/product_name)" == "Standard PC (Q35 + ICH9, 2009)" || "$(cat /sys/class/dmi/id/product_name)" == "VMware Virtual Platform" ]]; then
 		echo Running in a VM
 		arch-chroot /mnt pacman -S --noconfirm mesa xf86-video-vmware xf86-input-vmware virtualbox-guest-utils
-	elif [[ "$(lspci -v | grep VGA | sed -nE "s/.*(NVIDIA) .*/\1/p")" = "NVIDIA" ]]; then
-		if dialog --cr-wrap --title "NVIDIA GPU" --yesno "NVIDIA GPU found. This graphics card was found on your system:\n\n$(lspci -k | grep -A 2 -E "(VGA|3D)")\n\nDo you want to install the nvidia proprietary driver?\nBy selecting \"no\" the open source \"nouveau\" driver will be installed." 0 0; then
-			printf "Installing nvidia propietary driver..."
+	fi
+	if $NVIDIA_USER; then
+		if $NVIDIA_PROPRIETARY; then
+			printf "\nInstalling nvidia propietary driver...\n"
 			arch-chroot /mnt pacman -S --noconfirm "$NVIDIA_PACKAGE" nvidia-settings
 			if $MULTILIB_INSTALLATION; then
 				arch-chroot /mnt pacman -S --noconfirm lib32-nvidia-utils
@@ -764,17 +802,28 @@ EOF
 				arch-chroot /mnt pacman -S --noconfirm lib32-mesa
 			fi
 		fi
-	elif [[ "$(lspci -v | grep VGA | sed -nE "s/.*(AMD) .*/\1/p")" = "AMD" ]]; then
-		echo AMD GPU found
-		arch-chroot /mnt pacman -S --noconfirm mesa xf86-video-amdgpu vulkan-radeon libva-mesa-driver mesa-vdpau
-		if $MULTILIB_INSTALLATION; then
-			arch-chroot /mnt pacman -S --noconfirm lib32-mesa lib32-vulkan-radeon lib32-libva-mesa-driver lib32-mesa-vdpau
-		fi
-	elif [[ "$(lspci -v | grep VGA | sed -nE "s/.*(Intel) .*/\1/p")" = "Intel" ]]; then
-		echo Intel GPU found
-		arch-chroot /mnt pacman -S --noconfirm mesa-amber xf86-video-intel vulkan-intel intel-media-driver
+	fi
+	if $MESA_AMBER; then
+		arch-chroot /mnt pacman -S --noconfirm mesa-amber
 		if $MULTILIB_INSTALLATION; then
 			arch-chroot /mnt pacman -S --noconfirm lib32-mesa-amber
+		fi
+	else
+		arch-chroot /mnt pacman -S --noconfirm mesa
+		if $MULTILIB_INSTALLATION; then
+			arch-chroot /mnt pacman -S --noconfirm lib32-mesa
+		fi
+	fi
+	if $AMD_USER; then
+		arch-chroot /mnt pacman -S --noconfirm xf86-video-amdgpu vulkan-radeon libva-mesa-driver mesa-vdpau
+		if $MULTILIB_INSTALLATION; then
+			arch-chroot /mnt pacman -S --noconfirm lib32-vulkan-radeon lib32-libva-mesa-driver lib32-mesa-vdpau
+		fi
+	fi
+	if $INTEL_USER; then
+		arch-chroot /mnt pacman -S --noconfirm xf86-video-intel vulkan-intel intel-media-driver libva-intel-driver intel-gpu-tools
+		if $MULTILIB_INSTALLATION; then
+			arch-chroot /mnt pacman -S --noconfirmlib32-vulkan-intel lib32-libva-intel-driver
 		fi
 	fi
 }
@@ -986,7 +1035,7 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 check_internet_connection
 if dialog --defaultno --title "Arch installer by zweiler2" --yesno 'Do you want to install Arch Linux?\nBy confirming this you also confirm that you read the script and are aware of what it does.\nAlso i am not responsible for any lost data.\nYou have been warned!' 0 0; then
-	check_for_efi
+	check_system
 	information_gathering
 	if ! $MANUAL_PARTITIONING; then
 		auto_partitioning
