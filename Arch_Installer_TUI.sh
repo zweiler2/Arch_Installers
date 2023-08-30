@@ -1,5 +1,5 @@
 #!/bin/bash
-# Arch Linux Install Script by zweiler2 v1 Tui Edition
+# Arch Linux Install Script by zweiler2 TUI Edition
 
 check_system() {
 	### Check if EFI system ###
