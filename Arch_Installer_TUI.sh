@@ -731,7 +731,7 @@ EOF
 	elif [[ "$(lspci -v | grep VGA | sed -nE "s/.*(NVIDIA) .*/\1/p")" = "NVIDIA" ]]; then
 		if dialog --cr-wrap --title "NVIDIA GPU" --yesno "NVIDIA GPU found. This graphics card was found on your system:\n\n$(lspci -k | grep -A 2 -E "(VGA|3D)")\n\nDo you want to install the nvidia proprietary driver?\nBy selecting \"no\" the open source \"nouveau\" driver will be installed." 0 0; then
 			printf "Installing nvidia propietary driver..."
-			arch-chroot /mnt pacman -S --noconfirm nvidia nvidia-settings
+			arch-chroot /mnt pacman -S --noconfirm "$NVIDIA_PACKAGE" nvidia-settings
 			if $MULTILIB_INSTALLATION; then
 				arch-chroot /mnt pacman -S --noconfirm lib32-nvidia-utils
 			fi
