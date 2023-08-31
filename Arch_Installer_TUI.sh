@@ -457,18 +457,41 @@ information_gathering() {
 		bash
 
 		### Ask for root partition ###
-		ROOT_PARTITION=$(dialog --stdout --title "Select ROOT partition" --menu "Select your root partition" 0 0 0 "${PARTLIST_ARRAY[@]}")
-		ROOT_PARTITION="/dev/${ROOT_PARTITION}"
+		while true; do
+			if ! ROOT_PARTITION=$(dialog --stdout --title "Select ROOT partition" --menu "Select your root partition" 0 0 0 "${PARTLIST_ARRAY[@]}"); then
+				if dialog --title "Select ROOT partition" --defaultno --yesno "Do you want to launch a subshell for doing the partitioning again?" 6 41; then
+					bash
+				else
+					exit_confirmation
+				fi
+			fi
+			ROOT_PARTITION=$(echo "$ROOT_PARTITION" | cut -d ' ' -f 1)
+			if [ -z "$ROOT_PARTITION" ]; then
+				dialog --title "Select ROOT partition" --msgbox "You didn't select a root partition,\nplease do so now." 6 39
+			else
+				ROOT_PARTITION="/dev/${ROOT_PARTITION}"
+				break
+			fi
+		done
 
 		### Ask for efi partition ###
 		if $EFI_SYSTEM; then
 			while true; do
-				EFI_PARTITION=$(dialog --stdout --title "Select EFI partition" --menu "Select your efi partition" 0 0 0 "${PARTLIST_ARRAY[@]}")
-				EFI_PARTITION="/dev/${EFI_PARTITION}"
-				if [[ "$ROOT_PARTITION" != "$EFI_PARTITION" ]]; then
-					break
-				elif [[ "$ROOT_PARTITION" = "$EFI_PARTITION" ]]; then
+				if ! EFI_PARTITION=$(dialog --stdout --title "Select EFI partition" --menu "Select your efi partition" 0 0 0 "${PARTLIST_ARRAY[@]}"); then
+					if dialog --title "Select EFI partition" --defaultno --yesno "Do you want to launch a subshell for doing the partitioning again?" 6 41; then
+						bash
+					else
+						exit_confirmation
+					fi
+				fi
+				EFI_PARTITION=$(echo "$EFI_PARTITION" | cut -d ' ' -f 1)
+				if [ -z "$EFI_PARTITION" ]; then
+					dialog --title "Select EFI partition" --msgbox "You didn't select a efi partition,\nplease do so now." 6 39
+				elif [[ "/dev/${EFI_PARTITION}" = "$ROOT_PARTITION" ]]; then
 					dialog --title "Partitioning" --msgbox "This is your root partition. Choose another one..." 0 0
+				elif [[ "/dev/${EFI_PARTITION}" != "$ROOT_PARTITION" ]]; then
+					EFI_PARTITION="/dev/${EFI_PARTITION}"
+					break
 				fi
 			done
 		fi
@@ -477,14 +500,23 @@ information_gathering() {
 		if dialog --title "Partitioning" --yesno "Did you make a seperate /home partition?" 5 45; then
 			CREATEHOMEPARTITION=true
 			while true; do
-				HOME_PARTITION=$(dialog --stdout --title "Select HOME partition" --menu "Select your home partition" 0 0 0 "${PARTLIST_ARRAY[@]}")
-				HOME_PARTITION="/dev/${HOME_PARTITION}"
-				if [[ "$HOME_PARTITION" != "$ROOT_PARTITION" && "$HOME_PARTITION" != "$EFI_PARTITION" ]]; then
-					break
-				elif [[ "$HOME_PARTITION" = "$ROOT_PARTITION" ]]; then
-					dialog --title "Partitioning" --msgbox "This is your root partition. Choose another one..." 5 55
-				elif [[ "$HOME_PARTITION" = "$EFI_PARTITION" ]]; then
+				if ! HOME_PARTITION=$(dialog --stdout --title "Select HOME partition" --menu "Select your home partition" 0 0 0 "${PARTLIST_ARRAY[@]}"); then
+					if dialog --title "Select HOME partition" --defaultno --yesno "Do you want to launch a subshell for doing the partitioning again?" 6 41; then
+						bash
+					else
+						exit_confirmation
+					fi
+				fi
+				HOME_PARTITION=$(echo "$HOME_PARTITION" | cut -d ' ' -f 1)
+				if [ -z "$HOME_PARTITION" ]; then
+					dialog --title "Select HOME partition" --msgbox "You didn't select a home partition,\nplease do so now." 6 39
+				elif [[ "/dev/${HOME_PARTITION}" = "$ROOT_PARTITION" ]]; then
+					dialog --title "Partitioning" --msgbox "This is your root partition. Choose another one..." 0 0
+				elif [[ "/dev/${HOME_PARTITION}" = "$EFI_PARTITION" ]]; then
 					dialog --title "Partitioning" --msgbox "This is your efi partition. Choose another one..." 5 55
+				elif [[ "/dev/${HOME_PARTITION}" != "$ROOT_PARTITION" && "/dev/${HOME_PARTITION}" != "$EFI_PARTITION" ]]; then
+					HOME_PARTITION="/dev/${HOME_PARTITION}"
+					break
 				fi
 			done
 		else
@@ -722,8 +754,8 @@ base_os_install() {
 		mount -o subvol=@pkg "${ROOT_PARTITION}" /mnt/var/cache/pacman/pkg/
 		mount -o subvol=@tmp "${ROOT_PARTITION}" /mnt/tmp
 		if ! $CREATEHOMEPARTITION; then
-            mount --mkdir -o subvol=@home "${ROOT_PARTITION}" /mnt/home
-        fi
+			mount --mkdir -o subvol=@home "${ROOT_PARTITION}" /mnt/home
+		fi
 		if $CREATESWAPFILE; then
 			mount -o subvol=@swap "${ROOT_PARTITION}" /mnt/swap
 		fi
