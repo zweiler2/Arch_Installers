@@ -899,7 +899,7 @@ additional_drivers() {
 }
 
 ### The installer itself. Good luck. ###
-printf "Arch Linux Install Script by zweiler2 v1 Auto Edition\n"
+printf "Arch Linux Install Script by zweiler2 AUTO Edition\n"
 echo "Start time: $(date)"
 pacman -Sy --noconfirm --needed dialog
 if [ "$(id -u)" -ne 0 ]; then
