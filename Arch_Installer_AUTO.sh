@@ -640,6 +640,10 @@ base_os_install() {
 		arch-chroot /mnt ufw enable
 		arch-chroot /mnt ufw default deny
 	fi
+
+	### Set up networking ###
+	arch-chroot /mnt pacman -S --noconfirm networkmanager
+	arch-chroot /mnt systemctl enable NetworkManager.service
 }
 
 xorg_graphics_install() {
@@ -727,15 +731,13 @@ desktop_install() {
 	case $DESKTOP_TO_INSTALL in
 	1)
 		printf "Installing Desktop Environment...(KDE Plasma)"
-		arch-chroot /mnt pacman -S --noconfirm plasma-meta konsole kate dolphin ark kcalc spectacle sddm sddm-kcm plasma-wayland-session egl-wayland polkit polkit-qt5 polkit-kde-agent networkmanager partitionmanager packagekit-qt5
+		arch-chroot /mnt pacman -S --noconfirm plasma-meta konsole kate dolphin ark kcalc spectacle sddm sddm-kcm plasma-wayland-session egl-wayland polkit polkit-qt5 polkit-kde-agent partitionmanager packagekit-qt5
 		arch-chroot /mnt systemctl enable sddm.service
-		arch-chroot /mnt systemctl enable NetworkManager.service
 		;;
 	2)
 		printf "Installing Desktop Environment...(GNOME)"
-		arch-chroot /mnt pacman -S --noconfirm gnome gnome-shell-extensions polkit polkit-gnome networkmanager p7zip unrar gufw gvfs-goa dconf-editor gnome-shell-extensions gnome-themes-extra gnome-shell-extension-appindicator gnome-firmware
+		arch-chroot /mnt pacman -S --noconfirm gnome gnome-shell-extensions polkit polkit-gnome p7zip unrar gufw gvfs-goa dconf-editor gnome-shell-extensions gnome-themes-extra gnome-shell-extension-appindicator gnome-firmware
 		arch-chroot /mnt systemctl enable gdm.service
-		arch-chroot /mnt systemctl enable NetworkManager.service
 		;;
 	esac
 }
