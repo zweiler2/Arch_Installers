@@ -194,7 +194,21 @@ information_gathering() {
 	EXT4=false
 
 	### Ask for hostname ###
-	HOSTNAME=$(dialog --stdout --title "Hostname" --inputbox 'Set your hostname (Name your PC!)' 7 37)
+	NAME_REGEX="^[a-z][-a-z0-9]*\$"
+	while true; do
+		HOSTNAME=$(dialog --stdout --title "Hostname" --inputbox 'Set your hostname (Name your PC!)' 7 37)
+		if [ "$HOSTNAME" = "root" ]; then
+			dialog --title "Hostname" --msgbox "Setting your hostname to root is bad practice.\nPlease choose another." 6 50
+		elif [ -z "$HOSTNAME" ]; then
+			dialog --title "Hostname" --msgbox "Please set a hostname!" 5 26
+		elif [ ${#HOSTNAME} -gt 63 ]; then
+			dialog --title "Hostname" --msgbox "Hostname length must not exceed 63 characters!" 5 50
+		elif [[ ! $HOSTNAME =~ $NAME_REGEX ]]; then
+			dialog --title "Hostname" --msgbox "Invalid hostname \"$HOSTNAME\"\nHostname needs to follow these rules:\n\n- Must start with a lowercase letter.\n- May only contain lowercase letters, digits and hyphens." 9 61
+		else
+			break
+		fi
+	done
 
 	user_info_gathering
 	partition_info_gathering

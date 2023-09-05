@@ -240,6 +240,24 @@ information_gathering() {
 	done
 	menu_list=()
 
+	### Ask for hostname ###
+	NAME_REGEX="^[a-z][-a-z0-9]*\$"
+	while true; do
+		if ! HOSTNAME=$(dialog --stdout --title "Hostname" --inputbox 'Set your hostname (Name your PC!)' 7 37); then
+			exit_confirmation
+		elif [ "$HOSTNAME" = "root" ]; then
+			dialog --title "Hostname" --msgbox "Setting your hostname to root is bad practice.\nPlease choose another." 6 50
+		elif [ -z "$HOSTNAME" ]; then
+			dialog --title "Hostname" --msgbox "Please set a hostname!" 5 26
+		elif [ ${#HOSTNAME} -gt 63 ]; then
+			dialog --title "Hostname" --msgbox "Hostname length must not exceed 63 characters!" 5 50
+		elif [[ ! $HOSTNAME =~ $NAME_REGEX ]]; then
+			dialog --title "Hostname" --msgbox "Invalid hostname \"$HOSTNAME\"\nHostname needs to follow these rules:\n\n- Must start with a lowercase letter.\n- May only contain lowercase letters, digits and hyphens." 9 61
+		else
+			break
+		fi
+	done
+
 	### Ask for linux kernel ###
 	while true; do
 		if KERNEL=$(dialog --stdout --title "Kernel" --menu "Which linux kernel do you want to use?" 7 42 0 \
@@ -404,9 +422,6 @@ information_gathering() {
 	else
 		EXT4=true
 	fi
-
-	### Ask for hostname ###
-	HOSTNAME=$(dialog --stdout --title "Hostname" --inputbox 'Set your hostname (Name your PC!)' 7 37)
 
 	user_info_gathering
 	partition_info_gathering
