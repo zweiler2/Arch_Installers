@@ -765,7 +765,7 @@ post_install() {
 			cd paru-bin || exit
 			arch-chroot /mnt chown -R "$ARCHUSER":"$ARCHUSER" /home/"$ARCHUSER"/gitclones
 			arch-chroot /mnt su "$ARCHUSER" -c "cd /home/$ARCHUSER/gitclones/paru-bin && makepkg"
-			find paru-bin* -print0 | xargs pacman -U --noconfirm
+			arch-chroot /mnt find /home/"$ARCHUSER"/gitclones/paru-bin/paru-bin* -print0 | xargs pacman -U --noconfirm
 			cd || exit
 			;;
 		2)
@@ -778,7 +778,7 @@ post_install() {
 			cd yay-bin || exit
 			arch-chroot /mnt chown -R "$ARCHUSER":"$ARCHUSER" /home/"$ARCHUSER"/gitclones
 			arch-chroot /mnt su "$ARCHUSER" -c "cd /home/$ARCHUSER/gitclones/yay-bin && makepkg"
-			find yay-bin* -print0 | xargs pacman -U --noconfirm
+			arch-chroot /mnt find /home/"$ARCHUSER"/gitclones/yay-bin/yay-bin* -print0 | xargs pacman -U --noconfirm
 			cd || exit
 			;;
 		esac
