@@ -1011,7 +1011,7 @@ audio_install() {
 
 additional_packages() {
 	printf "\nInstalling additional_packages...\n"
-	arch-chroot /mnt pacman -S --noconfirm --needed nano vim openssh htop wget iwd wireless_tools wpa_supplicant smartmontools xdg-utils neofetch lshw firefox git p7zip unrar unarchiver lzop lrzip libva libva-utils llvm
+	arch-chroot /mnt pacman -S --noconfirm --needed nano vim openssh htop wget iwd wireless_tools wpa_supplicant smartmontools xdg-utils neofetch lshw git p7zip unrar unarchiver lzop lrzip libva libva-utils llvm "$(if $INSTALL_DESKTOP_ENVIRONMENT; then echo firefox; fi)"
 }
 
 post_install() {
@@ -1201,8 +1201,8 @@ if dialog --defaultno --title "Arch installer by zweiler2" --yesno 'Do you want 
 		xorg_graphics_install
 		audio_install
 		desktop_install
-		additional_packages
 	fi
+	additional_packages
 	post_install
 	additional_drivers
 	printf "\nInstallation finished! You may reboot now, or type \"arch-chroot /mnt\" to make further changes\n"
