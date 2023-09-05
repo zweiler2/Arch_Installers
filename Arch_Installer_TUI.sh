@@ -303,6 +303,13 @@ information_gathering() {
 		;;
 	esac
 
+	### Ask for filesystem ###
+	if dialog --title "Filesystem" --yesno "Do you want to use the btrfs filesystem?\n(EXT4 is the fallback)" 6 44; then
+		EXT4=false
+	else
+		EXT4=true
+	fi
+
 	### Ask for SWAP file ###
 	if dialog --title "SWAP" --yesno "Do you want to make a swapfile?\n(This is generally recommended to do)" 6 41; then
 		CREATESWAPFILE=true
@@ -347,41 +354,6 @@ information_gathering() {
 		INSTALL_OSPROBER=false
 	fi
 
-	### Ask for flatpak support ###
-	if dialog --title "Flatpak" --yesno "Do you want to have flatpak support?" 5 40; then
-		INSTALL_FLATPAK=true
-	else
-		INSTALL_FLATPAK=false
-	fi
-
-	### Ask for a firewall ###
-	if dialog --title "Firewall" --yesno "Install the Uncomplicated Firewall (UFW)?" 5 45; then
-		INSTALL_FIREWALL=true
-	else
-		INSTALL_FIREWALL=false
-	fi
-
-	### Ask for bluetooth ###
-	if dialog --title "Bluetooth" --yesno "Do you want to have bluetooth support?" 5 42; then
-		INSTALL_BLUETOOTH=true
-	else
-		INSTALL_BLUETOOTH=false
-	fi
-
-	### Ask for antivirus ###
-	if dialog --title "Antivirus" --yesno "Do you want to have antivirus support?" 5 42; then
-		INSTALL_ANTIVIRUS=true
-	else
-		INSTALL_ANTIVIRUS=false
-	fi
-
-	### Ask for printing ###
-	if dialog --title "Printing" --yesno "Do you want to have printing support?" 5 41; then
-		INSTALL_PRINTING=true
-	else
-		INSTALL_PRINTING=false
-	fi
-
 	### Ask for AUR helper ###
 	if dialog --title "AUR helper" --yesno "Do you want to have an AUR helper?" 5 38; then
 		INSTALL_AUR_HELPER=true
@@ -409,39 +381,76 @@ information_gathering() {
 		INSTALL_CHAOTIC_AUR=false
 	fi
 
-	### Setup plymouth ###
-	if dialog --title "Plymouth" --yesno "Do you want to install plymouth?\n(Pretty boot screen with loading circle)" 6 45; then
-		INSTALL_PLYMOUTH=true
+	### Ask for a firewall ###
+	if dialog --title "Firewall" --yesno "Install the Uncomplicated Firewall (UFW)?" 5 45; then
+		INSTALL_FIREWALL=true
 	else
-		INSTALL_PLYMOUTH=false
+		INSTALL_FIREWALL=false
 	fi
 
-	### Ask for filesystem ###
-	if dialog --title "Filesystem" --yesno "Do you want to use the btrfs filesystem?\n(EXT4 is the fallback)" 6 44; then
-		EXT4=false
+	### Ask for antivirus ###
+	if dialog --title "Antivirus" --yesno "Do you want to have antivirus support?" 5 42; then
+		INSTALL_ANTIVIRUS=true
 	else
-		EXT4=true
+		INSTALL_ANTIVIRUS=false
 	fi
 
 	user_info_gathering
 	partition_info_gathering
 
-	### Ask for Desktop Environment ###
-	if dialog --title "Desktop Environment" --yesno "Do you want to install a Desktop Environment?" 5 49; then
-		INSTALL_DESKTOP_ENVIRONMENT=true
-		DESKTOP_TO_INSTALL=$(dialog --stdout --title "Desktop Environment" --menu "Which Desktop Environment do you want to install?" 9 53 1 \
-			1 "KDE Plasma" \
-			2 "GNOME")
-	else
+	### Ask for server install ###
+	if dialog --title "Server install" --yesno "Do you want this system to be a server?\n(Plain minimal CLI system)" 6 43; then
 		INSTALL_DESKTOP_ENVIRONMENT=false
-	fi
+		INSTALL_FLATPAK=false
+		INSTALL_BLUETOOTH=false
+		INSTALL_PRINTING=false
+		INSTALL_PLYMOUTH=false
+	else
+		### Ask for Desktop Environment ###
+		if dialog --title "Desktop Environment" --yesno "Do you want to install a Desktop Environment?" 5 49; then
+			INSTALL_DESKTOP_ENVIRONMENT=true
+			DESKTOP_TO_INSTALL=$(dialog --stdout --title "Desktop Environment" --menu "Which Desktop Environment do you want to install?" 9 53 1 \
+				1 "KDE Plasma" \
+				2 "GNOME")
+		else
+			INSTALL_DESKTOP_ENVIRONMENT=false
+		fi
 
-	### Ask for X11 keyboard layout ###
-	if $INSTALL_DESKTOP_ENVIRONMENT; then
-		pacman -Sy --noconfirm --needed xkeyboard-config
-		make_menu "$(localectl list-x11-keymap-layouts --no-pager)"
-		KEYBOARD_LAYOUT_X11=$(dialog --stdout --title "X11 keyboard layout" --menu "Select your desired X11 keyboard layout" 0 43 0 "${menu_list[@]}")
-		menu_list=()
+		### Ask for X11 keyboard layout ###
+		if $INSTALL_DESKTOP_ENVIRONMENT; then
+			pacman -Sy --noconfirm --needed xkeyboard-config
+			make_menu "$(localectl list-x11-keymap-layouts --no-pager)"
+			KEYBOARD_LAYOUT_X11=$(dialog --stdout --title "X11 keyboard layout" --menu "Select your desired X11 keyboard layout" 0 43 0 "${menu_list[@]}")
+			menu_list=()
+		fi
+
+		### Ask for flatpak support ###
+		if dialog --title "Flatpak" --yesno "Do you want to have flatpak support?" 5 40; then
+			INSTALL_FLATPAK=true
+		else
+			INSTALL_FLATPAK=false
+		fi
+
+		### Ask for bluetooth ###
+		if dialog --title "Bluetooth" --yesno "Do you want to have bluetooth support?" 5 42; then
+			INSTALL_BLUETOOTH=true
+		else
+			INSTALL_BLUETOOTH=false
+		fi
+
+		### Ask for printing ###
+		if dialog --title "Printing" --yesno "Do you want to have printing support?" 5 41; then
+			INSTALL_PRINTING=true
+		else
+			INSTALL_PRINTING=false
+		fi
+
+		### Setup plymouth ###
+		if dialog --title "Plymouth" --yesno "Do you want to install plymouth?\n(Pretty boot screen with loading circle)" 6 45; then
+			INSTALL_PLYMOUTH=true
+		else
+			INSTALL_PLYMOUTH=false
+		fi
 	fi
 }
 

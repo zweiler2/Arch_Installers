@@ -213,19 +213,24 @@ information_gathering() {
 	user_info_gathering
 	partition_info_gathering
 
-	### Ask for Desktop Environment ###
-	if dialog --title "Desktop Environment" --yesno "Do you want to install a Desktop Environment?" 5 49; then
-		INSTALL_DESKTOP_ENVIRONMENT=true
-		DESKTOP_TO_INSTALL=$(dialog --stdout --title "Desktop Environment" --menu "Which Desktop Environment do you want to install?" 9 53 1 \
-			1 "KDE Plasma" \
-			2 "GNOME")
-	else
+	### Ask for server install ###
+	if dialog --title "Server install" --yesno "Do you want this system to be a server?\n(Plain minimal CLI system)" 6 43; then
 		INSTALL_DESKTOP_ENVIRONMENT=false
-	fi
-
-	### Set X11 keyboard layout ###
-	if $INSTALL_DESKTOP_ENVIRONMENT; then
-		KEYBOARD_LAYOUT_X11="at"
+		INSTALL_FLATPAK=false
+		INSTALL_BLUETOOTH=false
+		INSTALL_PRINTING=false
+		INSTALL_PLYMOUTH=false
+	else
+		### Ask for Desktop Environment ###
+		if dialog --title "Desktop Environment" --yesno "Do you want to install a Desktop Environment?" 5 49; then
+			INSTALL_DESKTOP_ENVIRONMENT=true
+			DESKTOP_TO_INSTALL=$(dialog --stdout --title "Desktop Environment" --menu "Which Desktop Environment do you want to install?" 9 53 1 \
+				1 "KDE Plasma" \
+				2 "GNOME")
+			KEYBOARD_LAYOUT_X11="at"
+		else
+			INSTALL_DESKTOP_ENVIRONMENT=false
+		fi
 	fi
 }
 
