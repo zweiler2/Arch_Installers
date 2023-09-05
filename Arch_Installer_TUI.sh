@@ -1046,9 +1046,7 @@ post_install() {
 			pacman -S --noconfirm --needed git
 			arch-chroot /mnt pacman -S --noconfirm --needed git
 			mkdir /mnt/home/"$ARCHUSER"/gitclones
-			cd /mnt/home/"$ARCHUSER"/gitclones || exit
-			git clone https://aur.archlinux.org/paru-bin.git
-			cd paru-bin || exit
+			cd /mnt/home/"$ARCHUSER"/gitclones && git clone https://aur.archlinux.org/paru-bin.git && cd paru-bin || exit
 			arch-chroot /mnt chown -R "$ARCHUSER":"$ARCHUSER" /home/"$ARCHUSER"/gitclones
 			arch-chroot /mnt su "$ARCHUSER" -c "cd /home/$ARCHUSER/gitclones/paru-bin && makepkg"
 			arch-chroot /mnt find /home/"$ARCHUSER"/gitclones/paru-bin/paru-bin* -print0 | xargs pacman -U --noconfirm
@@ -1059,9 +1057,7 @@ post_install() {
 			pacman -S --noconfirm --needed git
 			arch-chroot /mnt pacman -S --noconfirm --needed git
 			mkdir /mnt/home/"$ARCHUSER"/gitclones
-			cd /mnt/home/"$ARCHUSER"/gitclones || exit
-			git clone https://aur.archlinux.org/yay-bin.git
-			cd yay-bin || exit
+			cd /mnt/home/"$ARCHUSER"/gitclones && git clone https://aur.archlinux.org/yay-bin.git && cd yay-bin || exit
 			arch-chroot /mnt chown -R "$ARCHUSER":"$ARCHUSER" /home/"$ARCHUSER"/gitclones
 			arch-chroot /mnt su "$ARCHUSER" -c "cd /home/$ARCHUSER/gitclones/yay-bin && makepkg"
 			arch-chroot /mnt find /home/"$ARCHUSER"/gitclones/yay-bin/yay-bin* -print0 | xargs pacman -U --noconfirm
