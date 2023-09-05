@@ -1160,6 +1160,7 @@ EOF
 
 	### Self delete post install script ###
 	arch-chroot /mnt pacman -S --noconfirm zenity
+	mkdir -p /mnt/home/"$ARCHUSER"/.config/autostart
 	case $DESKTOP_TO_INSTALL in
 	1)
 		cat <<EOF >/mnt/home/"$ARCHUSER"/.config/autostart/Post_Install_Autostarter.desktop
