@@ -144,7 +144,7 @@ information_gathering() {
 	loadkeys de-latin1
 
 	### Set timezone ###
-	TIMEZONE="Europe/Vienna"
+	TIMEZONE="$(curl --fail https://ipapi.co/timezone)"
 
 	### Set language ###
 	LANGUAGE="de_AT.UTF-8 UTF-8"

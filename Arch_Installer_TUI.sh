@@ -178,19 +178,22 @@ information_gathering() {
 	loadkeys "$TEMP_KB_LAYOUT"
 
 	### Ask for the timezone ###
-	make_menu "$(timedatectl list-timezones --no-pager)"
-	while true; do
-		if TIMEZONE=$(dialog --stdout --title "Timezone" --menu "Select your timezone" 0 0 0 "${menu_list[@]}"); then
-			if [ -n "$TIMEZONE" ]; then
-				break
+	TIMEZONE="$(curl --fail https://ipapi.co/timezone)"
+	if ! dialog --title "Timezone" --yesno "Is the this your timezone?\n$TIMEZONE" 6 30; then
+		make_menu "$(timedatectl list-timezones --no-pager)"
+		while true; do
+			if TIMEZONE=$(dialog --stdout --title "Timezone" --menu "Select your timezone" 0 0 0 "${menu_list[@]}"); then
+				if [ -n "$TIMEZONE" ]; then
+					break
+				else
+					dialog --title "Timezone" --msgbox "You didn't select a timezone.\nPlease do so now." 6 33
+				fi
 			else
-				dialog --title "Timezone" --msgbox "You didn't select a timezone.\nPlease do so now." 6 33
+				exit_confirmation
 			fi
-		else
-			exit_confirmation
-		fi
-	done
-	menu_list=()
+		done
+		menu_list=()
+	fi
 
 	### Ask for languages ###
 	make_checklist "$(cut </etc/locale.gen -c2- | tail -n +18 | sed '$ d' | sed 's/ *$//')"
