@@ -197,7 +197,72 @@ information_gathering() {
 	HOSTNAME=$(dialog --stdout --title "Hostname" --inputbox 'Set your hostname (Name your PC!)' 7 37)
 
 	user_info_gathering
+	partition_info_gathering
 
+	### Ask for Desktop Environment ###
+	if dialog --title "Desktop Environment" --yesno "Do you want to install a Desktop Environment?" 5 49; then
+		INSTALL_DESKTOP_ENVIRONMENT=true
+		DESKTOP_TO_INSTALL=$(dialog --stdout --title "Desktop Environment" --menu "Which Desktop Environment do you want to install?" 9 53 1 \
+			1 "KDE Plasma" \
+			2 "GNOME")
+	else
+		INSTALL_DESKTOP_ENVIRONMENT=false
+	fi
+
+	### Set X11 keyboard layout ###
+	if $INSTALL_DESKTOP_ENVIRONMENT; then
+		KEYBOARD_LAYOUT_X11="at"
+	fi
+}
+
+user_info_gathering() {
+	### Setup password for root ###
+	while true; do
+		ROOTPASS=$(dialog --stdout --insecure --title "Account configuration" --passwordbox "Set root/system administrator password" 7 42)
+		if [ -z "$ROOTPASS" ]; then
+			dialog --title "Account configuration" --msgbox "No password was set for user \"root\"!" 5 40
+			break
+		fi
+		ROOTPASS_CONF=$(dialog --stdout --insecure --title "Account configuration" --passwordbox "Confirm your root password" 7 30)
+		if [ "$ROOTPASS" = "$ROOTPASS_CONF" ]; then
+			break
+		else
+			dialog --title "Account configuration" --msgbox "Passwords do not match." 5 27
+		fi
+	done
+	### Create user ###
+	NAME_REGEX="^[a-z][-a-z0-9_]*\$"
+	while true; do
+		ARCHUSER=$(dialog --stdout --title "Account configuration" --inputbox "Enter username for this installation:" 7 41)
+		if [ "$ARCHUSER" = "root" ]; then
+			dialog --title "Account configuration" --msgbox "User root already exists." 5 29
+		elif [ -z "$ARCHUSER" ]; then
+			dialog --title "Account configuration" --msgbox "Please create a user!" 5 25
+		elif [ ${#ARCHUSER} -gt 32 ]; then
+			dialog --title "Account configuration" --msgbox "Username length must not exceed 32 characters!" 5 50
+		elif [[ ! $ARCHUSER =~ $NAME_REGEX ]]; then
+			dialog --title "Account configuration" --msgbox "Invalid username \"$ARCHUSER\"\nUsername needs to follow these rules:\n\n- Must start with a lowercase letter.\n- May only contain lowercase letters, digits, hyphens, and underscores." 9 75
+		else
+			break
+		fi
+	done
+	### Setup password for user ###
+	while true; do
+		ARCHPASS=$(dialog --stdout --insecure --title "Account configuration" --passwordbox "Set password for \"$ARCHUSER\"" 7 40)
+		if [ -z "$ARCHPASS" ]; then
+			dialog --title "Account configuration" --msgbox "Please type password for user \"$ARCHUSER\"!" 5 50
+		else
+			ARCHPASS_CONF=$(dialog --stdout --insecure --title "Account configuration" --passwordbox "Confirm password for \"$ARCHUSER\"" 7 45)
+			if [ "$ARCHPASS" = "$ARCHPASS_CONF" ]; then
+				break
+			else
+				dialog --title "Account configuration" --msgbox "Passwords do not match." 5 27
+			fi
+		fi
+	done
+}
+
+partition_info_gathering() {
 	### Drive select ###
 	while true; do
 		DEVICE=$(dialog --stdout --title "Select disk" --menu "Select your disk to install Arch Linux to" 0 0 0 "${DEVICELIST_ARRAY[@]}")
@@ -271,68 +336,6 @@ information_gathering() {
 		else
 			CREATEHOMEPARTITION=false
 			break
-		fi
-	done
-
-	### Ask for Desktop Environment ###
-	if dialog --title "Desktop Environment" --yesno "Do you want to install a Desktop Environment?" 5 49; then
-		INSTALL_DESKTOP_ENVIRONMENT=true
-		DESKTOP_TO_INSTALL=$(dialog --stdout --title "Desktop Environment" --menu "Which Desktop Environment do you want to install?" 9 53 1 \
-			1 "KDE Plasma" \
-			2 "GNOME")
-	else
-		INSTALL_DESKTOP_ENVIRONMENT=false
-	fi
-
-	### Set X11 keyboard layout ###
-	if $INSTALL_DESKTOP_ENVIRONMENT; then
-		KEYBOARD_LAYOUT_X11="at"
-	fi
-}
-
-user_info_gathering() {
-	### Setup password for root ###
-	while true; do
-		ROOTPASS=$(dialog --stdout --insecure --title "Account configuration" --passwordbox "Set root/system administrator password" 7 42)
-		if [ -z "$ROOTPASS" ]; then
-			dialog --title "Account configuration" --msgbox "No password was set for user \"root\"!" 5 40
-			break
-		fi
-		ROOTPASS_CONF=$(dialog --stdout --insecure --title "Account configuration" --passwordbox "Confirm your root password" 7 30)
-		if [ "$ROOTPASS" = "$ROOTPASS_CONF" ]; then
-			break
-		else
-			dialog --title "Account configuration" --msgbox "Passwords do not match." 5 27
-		fi
-	done
-	### Create user ###
-	NAME_REGEX="^[a-z][-a-z0-9_]*\$"
-	while true; do
-		ARCHUSER=$(dialog --stdout --title "Account configuration" --inputbox "Enter username for this installation:" 7 41)
-		if [ "$ARCHUSER" = "root" ]; then
-			dialog --title "Account configuration" --msgbox "User root already exists." 5 29
-		elif [ -z "$ARCHUSER" ]; then
-			dialog --title "Account configuration" --msgbox "Please create a user!" 5 25
-		elif [ ${#ARCHUSER} -gt 32 ]; then
-			dialog --title "Account configuration" --msgbox "Username length must not exceed 32 characters!" 5 50
-		elif [[ ! $ARCHUSER =~ $NAME_REGEX ]]; then
-			dialog --title "Account configuration" --msgbox "Invalid username \"$ARCHUSER\"\nUsername needs to follow these rules:\n\n- Must start with a lowercase letter.\n- May only contain lowercase letters, digits, hyphens, and underscores." 9 75
-		else
-			break
-		fi
-	done
-	### Setup password for user ###
-	while true; do
-		ARCHPASS=$(dialog --stdout --insecure --title "Account configuration" --passwordbox "Set password for \"$ARCHUSER\"" 7 40)
-		if [ -z "$ARCHPASS" ]; then
-			dialog --title "Account configuration" --msgbox "Please type password for user \"$ARCHUSER\"!" 5 50
-		else
-			ARCHPASS_CONF=$(dialog --stdout --insecure --title "Account configuration" --passwordbox "Confirm password for \"$ARCHUSER\"" 7 45)
-			if [ "$ARCHPASS" = "$ARCHPASS_CONF" ]; then
-				break
-			else
-				dialog --title "Account configuration" --msgbox "Passwords do not match." 5 27
-			fi
 		fi
 	done
 }
