@@ -945,13 +945,13 @@ xorg_graphics_install() {
 	arch-chroot /mnt pacman -S --noconfirm --needed xorg-server xorg-xinit xf86-input-libinput xorg-fonts-encodings xorg-setxkbmap xorg-xauth xorg-xdpyinfo xorg-xkbcomp xorg-xmessage xorg-xmodmap xorg-xprop xorg-xrandr xorg-xrdb xorg-xset xorg-xsetroot xorg-xwayland xorgproto
 
 	### Set X11 keyboard layout ###
-	cat <<EOF >/mnt/etc/X11/xorg.conf.d/00-keyboard.conf
-Section "InputClass"
-        Identifier "system-keyboard"
-        MatchIsKeyboard "on"
-        Option "XkbLayout" "$KEYBOARD_LAYOUT_X11"
-EndSection
-EOF
+	{
+		echo "Section \"InputClass\""
+		echo "	Identifier \"system-keyboard\""
+		echo "	MatchIsKeyboard \"on\""
+		echo "	Option \"XkbLayout\" \"$KEYBOARD_LAYOUT_X11\""
+		echo "EndSection"
+	} >/mnt/etc/X11/xorg.conf.d/00-keyboard.conf
 	echo "XKBLAYOUT=$KEYBOARD_LAYOUT_X11" >>/mnt/etc/vconsole.conf
 
 	### Installing GPU drivers ###
@@ -971,23 +971,23 @@ EOF
 			arch-chroot /mnt mkinitcpio -P
 			arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
 			mkdir /mnt/etc/pacman.d/hooks
-			cat <<EOF >/mnt/etc/pacman.d/hooks/nvidia.hook
-[Trigger]
-Operation=Install
-Operation=Upgrade
-Operation=Remove
-Type=Package
-Target=$NVIDIA_PACKAGE
-Target=$KERNEL
-# Change the linux part above and in the Exec line if a different kernel is used
-
-[Action]
-Description=Update NVIDIA module in initcpio
-Depends=mkinitcpio
-When=PostTransaction
-NeedsTargets
-Exec=/bin/sh -c 'while read -r trg; do case trg in $KERNEL) exit 0; esac; done; /usr/bin/mkinitcpio -P'
-EOF
+			{
+				echo "[Trigger]"
+				echo "Operation=Install"
+				echo "Operation=Upgrade"
+				echo "Operation=Remove"
+				echo "Type=Package"
+				echo "Target=$NVIDIA_PACKAGE"
+				echo "Target=$KERNEL"
+				echo "# Change the linux part above and in the Exec line if a different kernel is used"
+				echo
+				echo "[Action]"
+				echo "Description=Update NVIDIA module in initcpio"
+				echo "Depends=mkinitcpio"
+				echo "When=PostTransaction"
+				echo "NeedsTargets"
+				echo "Exec=/bin/sh -c 'while read -r trg; do case trg in $KERNEL) exit 0; esac; done; /usr/bin/mkinitcpio -P'"
+			} >/mnt/etc/pacman.d/hooks/nvidia.hook
 		else
 			echo "Installing nvidia open source driver..."
 			arch-chroot /mnt pacman -S --noconfirm mesa xf86-video-nouveau
@@ -1123,23 +1123,24 @@ post_install() {
 
 	case $DESKTOP_TO_INSTALL in
 	1) ### Set up post install script for KDE Plasma ###
-		cat <<EOF >/mnt/home/"$ARCHUSER"/Arch_Installer_Post_Install.sh
-#!/bin/bash
-
-sed -i -n -e '/^gtk-theme-name=Breeze/!p' -e '\$agtk-theme-name=Breeze' /home/$ARCHUSER/.config/gtk-3.0/settings.ini
-sed -i -n -e '/^gtk-modules=colorreload-gtk-module:window-decorations-gtk-module/!p' -e 'gtk-modules=colorreload-gtk-module:window-decorations-gtk-module' /home/$ARCHUSER/.config/gtk-3.0/settings.ini
-sed -i -n -e '/^gtk-theme-name=Breeze/!p' -e '\$agtk-theme-name=Breeze' /home/$ARCHUSER/.config/gtk-4.0/settings.ini
-sed -i -n -e '/^gtk-modules=colorreload-gtk-module:window-decorations-gtk-module/!p' -e 'gtk-modules=colorreload-gtk-module:window-decorations-gtk-module' /home/$ARCHUSER/.config/gtk-4.0/settings.ini
-plasma-apply-lookandfeel -a org.kde.breezedark.desktop
-EOF
+		{
+			echo "#!/bin/bash"
+			echo
+			echo "sleep 10"
+			echo "sed -i -n -e '/^gtk-theme-name=Breeze/!p' -e '\$agtk-theme-name=Breeze' /home/$ARCHUSER/.config/gtk-3.0/settings.ini"
+			echo "sed -i -n -e '/^gtk-modules=colorreload-gtk-module:window-decorations-gtk-module/!p' -e 'gtk-modules=colorreload-gtk-module:window-decorations-gtk-module' /home/$ARCHUSER/.config/gtk-3.0/settings.ini"
+			echo "sed -i -n -e '/^gtk-theme-name=Breeze/!p' -e '\$agtk-theme-name=Breeze' /home/$ARCHUSER/.config/gtk-4.0/settings.ini"
+			echo "sed -i -n -e '/^gtk-modules=colorreload-gtk-module:window-decorations-gtk-module/!p' -e 'gtk-modules=colorreload-gtk-module:window-decorations-gtk-module' /home/$ARCHUSER/.config/gtk-4.0/settings.ini"
+			echo "plasma-apply-lookandfeel -a org.kde.breezedark.desktop"
+		} >/mnt/home/"$ARCHUSER"/Arch_Installer_Post_Install.sh
 		mkdir /mnt/etc/sddm.conf.d
-		cat <<EOF >/mnt/etc/sddm.conf.d/kde_settings.conf
-[General]
-Numlock=on
-
-[Theme]
-Current=breeze
-EOF
+		{
+			echo "[General]"
+			echo "Numlock=on"
+			echo
+			echo "[Theme]"
+			echo "Current=breeze"
+		} >/mnt/etc/sddm.conf.d/kde_settings.conf
 		if $INSTALL_PLYMOUTH; then
 			arch-chroot /mnt pacman -S --noconfirm plymouth-kcm
 		fi
@@ -1148,13 +1149,14 @@ EOF
 		fi
 		;;
 	2) ### Set up post install script for GNOME ###
-		cat <<EOF >/mnt/home/"$ARCHUSER"/Arch_Installer_Post_Install.sh
-#!/bin/bash
-
-gsettings set org.gnome.desktop.peripherals.touchpad click-method 'fingers'
-gsettings set org.gnome.shell disable-user-extensions false
-gsettings set org.gnome.desktop.wm.preferences button-layout ':minimize,maximize,close'
-EOF
+		{
+			echo "#!/bin/bash"
+			echo
+			echo "sleep 10"
+			echo "gsettings set org.gnome.desktop.peripherals.touchpad click-method 'fingers'"
+			echo "gsettings set org.gnome.shell disable-user-extensions false"
+			echo "gsettings set org.gnome.desktop.wm.preferences button-layout ':minimize,maximize,close'"
+		} >/mnt/home/"$ARCHUSER"/Arch_Installer_Post_Install.sh
 		;;
 	esac
 
@@ -1162,21 +1164,21 @@ EOF
 	arch-chroot /mnt pacman -S --noconfirm zenity
 	mkdir -p /mnt/home/"$ARCHUSER"/.config/autostart
 	case $DESKTOP_TO_INSTALL in
-	1)
-		cat <<EOF >/mnt/home/"$ARCHUSER"/.config/autostart/Post_Install_Autostarter.desktop
-[Desktop Entry]
-Name=Post_Install_Autostarter
-Exec=konsole -e 'bash -c "/home/$ARCHUSER/Arch_Installer_Post_Install.sh; bash"'
-Type=Application
-EOF
+	1) ### KDE Plasma ###
+		{
+			echo "[Desktop Entry]"
+			echo "Name=Post_Install_Autostarter"
+			echo "Exec=konsole -e 'bash -c \"/home/$ARCHUSER/Arch_Installer_Post_Install.sh; bash\"'"
+			echo "Type=Application"
+		} >/mnt/home/"$ARCHUSER"/.config/autostart/Post_Install_Autostarter.desktop
 		;;
-	2)
-		cat <<EOF >/mnt/home/"$ARCHUSER"/.config/autostart/Post_Install_Autostarter.desktop
-[Desktop Entry]
-Name=Post_Install_Autostarter
-Exec=kgx -e 'bash -c "/home/$ARCHUSER/Arch_Installer_Post_Install.sh; bash"'
-Type=Application
-EOF
+	2) ### GNOME ###
+		{
+			echo "[Desktop Entry]"
+			echo "Name=Post_Install_Autostarter"
+			echo "Exec=kgx -e 'bash -c \"/home/$ARCHUSER/Arch_Installer_Post_Install.sh; bash\"'"
+			echo "Type=Application"
+		} >/mnt/home/"$ARCHUSER"/.config/autostart/Post_Install_Autostarter.desktop
 		;;
 	esac
 	{
