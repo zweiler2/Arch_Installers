@@ -171,6 +171,9 @@ information_gathering() {
 	### Setup firewall ###
 	INSTALL_FIREWALL=true
 
+	### Install OpenSSH ###
+	INSTALL_OPENSSH=true
+
 	### Setup bluetooth ###
 	INSTALL_BLUETOOTH=true
 
@@ -227,22 +230,29 @@ information_gathering() {
 			DESKTOP_TO_INSTALL=$(dialog --stdout --title "Desktop Environment" --menu "Which Desktop Environment do you want to install?" 9 53 1 \
 				1 "KDE Plasma" \
 				2 "GNOME")
-			KEYBOARD_LAYOUT_X11="at"
 		else
 			INSTALL_DESKTOP_ENVIRONMENT=false
 		fi
+	fi
+
+	### Ask for X11 keyboard layout ###
+	if $INSTALL_DESKTOP_ENVIRONMENT; then
+		pacman -Sy --noconfirm --needed xkeyboard-config
+		make_menu "$(localectl list-x11-keymap-layouts --no-pager)"
+		KEYBOARD_LAYOUT_X11=$(dialog --stdout --title "X11 keyboard layout" --menu "Select your desired X11 keyboard layout:" 0 43 0 "${menu_list[@]}")
+		menu_list=()
 	fi
 }
 
 user_info_gathering() {
 	### Setup password for root ###
 	while true; do
-		ROOTPASS=$(dialog --stdout --insecure --title "Account configuration" --passwordbox "Set root/system administrator password" 7 42)
+		ROOTPASS=$(dialog --stdout --insecure --title "Account configuration" --passwordbox "Set root/system administrator password:" 7 42)
 		if [ -z "$ROOTPASS" ]; then
 			dialog --title "Account configuration" --msgbox "No password was set for user \"root\"!" 5 40
 			break
 		fi
-		ROOTPASS_CONF=$(dialog --stdout --insecure --title "Account configuration" --passwordbox "Confirm your root password" 7 30)
+		ROOTPASS_CONF=$(dialog --stdout --insecure --title "Account configuration" --passwordbox "Confirm your root password:" 7 30)
 		if [ "$ROOTPASS" = "$ROOTPASS_CONF" ]; then
 			break
 		else
@@ -267,11 +277,11 @@ user_info_gathering() {
 	done
 	### Setup password for user ###
 	while true; do
-		ARCHPASS=$(dialog --stdout --insecure --title "Account configuration" --passwordbox "Set password for \"$ARCHUSER\"" 7 40)
+		ARCHPASS=$(dialog --stdout --insecure --title "Account configuration" --passwordbox "Set password for \"$ARCHUSER\":" 7 40)
 		if [ -z "$ARCHPASS" ]; then
 			dialog --title "Account configuration" --msgbox "Please type password for user \"$ARCHUSER\"!" 5 50
 		else
-			ARCHPASS_CONF=$(dialog --stdout --insecure --title "Account configuration" --passwordbox "Confirm password for \"$ARCHUSER\"" 7 45)
+			ARCHPASS_CONF=$(dialog --stdout --insecure --title "Account configuration" --passwordbox "Confirm password for \"$ARCHUSER\":" 7 45)
 			if [ "$ARCHPASS" = "$ARCHPASS_CONF" ]; then
 				break
 			else
@@ -284,7 +294,7 @@ user_info_gathering() {
 partition_info_gathering() {
 	### Drive select ###
 	while true; do
-		DEVICE=$(dialog --stdout --title "Select disk" --menu "Select your disk to install Arch Linux to" 0 0 0 "${DEVICELIST_ARRAY[@]}")
+		DEVICE=$(dialog --stdout --title "Select disk" --menu "Select your disk to install Arch Linux to:" 0 0 0 "${DEVICELIST_ARRAY[@]}")
 		INSTALLDEVICE="/dev/${DEVICE}"
 		if [ ! -b "$INSTALLDEVICE" ]; then
 			dialog --title "Partitioning" --msgbox "$DEVICE not found!" 5 22
@@ -360,7 +370,7 @@ partition_info_gathering() {
 }
 
 auto_partitioning() {
-	if ! dialog --cr-wrap --defaultno --title "Format confirmation" --yesno "WARNING: The following drive is going to be fully erased.\nALL DATA ON DRIVE ${INSTALLDEVICE} WILL BE LOST! \n\n$(lsblk -o NAME,MAJ:MIN,RM,SIZE,RO,TYPE,VENDOR,MODEL,SERIAL,MOUNTPOINT "${INSTALLDEVICE}" | sed "1d")\n\nThis is the last warning!\nErase ${INSTALLDEVICE} and begin installation?" 20 0; then
+	if ! dialog --cr-wrap --defaultno --title "Format confirmation" --yesno "WARNING: The following drive is going to be fully erased.\nALL DATA ON DRIVE ${INSTALLDEVICE} WILL BE LOST! \n\n$(lsblk -o NAME,MAJ:MIN,RM,SIZE,RO,TYPE,VENDOR,MODEL,SERIAL,MOUNTPOINT "${INSTALLDEVICE}" | sed "1d")\n\nThis is the last warning! \nErase ${INSTALLDEVICE} and begin installation?" 20 0; then
 		dialog --sleep 5 --title "Format canceled" --infobox "Nothing has been written,\nbecause you have canceled the destructive install.\n\nExiting in 5 seconds..." 6 54
 		echo "Destructive Install Canceled."
 		exit 1
@@ -558,7 +568,7 @@ base_os_install() {
 
 	### Create users ###
 	printf "\nConfiguring user accounts..."
-	printf "\nCreating user %s${ARCHUSER}..."
+	printf "\nCreating user %s${ARCHUSER}...\n"
 	echo -e "${ROOTPASS}\n${ROOTPASS}" | arch-chroot /mnt passwd root
 	arch-chroot /mnt useradd --create-home "${ARCHUSER}"
 	echo -e "${ARCHPASS}\n${ARCHPASS}" | arch-chroot /mnt passwd "${ARCHUSER}"
@@ -639,6 +649,7 @@ base_os_install() {
 		arch-chroot /mnt systemctl enable ufw.service
 		arch-chroot /mnt ufw enable
 		arch-chroot /mnt ufw default deny
+		$INSTALL_OPENSSH && arch-chroot /mnt /ufw allow SSH
 	fi
 
 	### Set up networking ###
@@ -753,17 +764,23 @@ audio_install() {
 
 additional_packages() {
 	printf "\nInstalling additional_packages...\n"
-	arch-chroot /mnt pacman -S --noconfirm --needed nano vim openssh htop wget iwd wireless_tools wpa_supplicant smartmontools xdg-utils neofetch lshw git p7zip unrar unarchiver lzop lrzip libva libva-utils llvm "$(if $INSTALL_DESKTOP_ENVIRONMENT; then echo firefox; fi)"
+	arch-chroot /mnt pacman -S --noconfirm --needed nano vim htop wget iwd wireless_tools wpa_supplicant smartmontools xdg-utils neofetch lshw git p7zip unrar unarchiver lzop lrzip libva libva-utils llvm realtime-privileges
+	$INSTALL_DESKTOP_ENVIRONMENT && arch-chroot /mnt pacman -S --noconfirm --needed firefox
 }
 
 post_install() {
-	printf "\nPostinstall begins now"
+	printf "\nPostinstall begins now\n\n"
 
 	### Fix USB file transfer progress not showing correctly ###
-	mkdir /mnt/etc/sysctl.d
+	mkdir /mnt/etc/sysctl.d 2>/dev/null
 	touch /mnt/etc/sysctl.d/USB.conf
 	echo "vm.dirty_background_bytes = 16777216" >>/mnt/etc/sysctl.d/USB.conf
 	echo "vm.dirty_bytes = 50331648" >>/mnt/etc/sysctl.d/USB.conf
+
+	if $INSTALL_OPENSSH; then
+		arch-chroot /mnt pacman -S --noconfirm openssh
+		arch-chroot /mnt systemctl enable sshd.service
+	fi
 
 	if $INSTALL_BLUETOOTH; then
 		arch-chroot /mnt pacman -S --noconfirm bluez bluez-utils
@@ -771,7 +788,8 @@ post_install() {
 	fi
 
 	if $INSTALL_ANTIVIRUS; then
-		arch-chroot /mnt pacman -S --noconfirm clamav clamtk
+		arch-chroot /mnt pacman -S --noconfirm clamav
+		$INSTALL_DESKTOP_ENVIRONMENT && arch-chroot /mnt pacman -S --noconfirm clamtk
 		arch-chroot /mnt systemctl enable --now clamav-freshclam.service
 		arch-chroot /mnt systemctl enable --now clamav-daemon.service
 	fi
@@ -791,7 +809,8 @@ post_install() {
 			cd /mnt/home/"$ARCHUSER"/gitclones && git clone https://aur.archlinux.org/paru-bin.git && cd paru-bin || exit
 			arch-chroot /mnt chown -R "$ARCHUSER":"$ARCHUSER" /home/"$ARCHUSER"/gitclones
 			arch-chroot /mnt su "$ARCHUSER" -c "cd /home/$ARCHUSER/gitclones/paru-bin && makepkg"
-			arch-chroot /mnt find /home/"$ARCHUSER"/gitclones/paru-bin/paru-bin* -print0 | xargs pacman -U --noconfirm
+			PARU_PKG=$(find /mnt/home/"$ARCHUSER"/gitclones/paru-bin/ -name 'paru-bin*.pkg.tar.zst' | cut -c5-)
+			arch-chroot /mnt pacman -U --noconfirm "$PARU_PKG"
 			cd || exit
 			;;
 		2)
@@ -802,10 +821,12 @@ post_install() {
 			cd /mnt/home/"$ARCHUSER"/gitclones && git clone https://aur.archlinux.org/yay-bin.git && cd yay-bin || exit
 			arch-chroot /mnt chown -R "$ARCHUSER":"$ARCHUSER" /home/"$ARCHUSER"/gitclones
 			arch-chroot /mnt su "$ARCHUSER" -c "cd /home/$ARCHUSER/gitclones/yay-bin && makepkg"
-			arch-chroot /mnt find /home/"$ARCHUSER"/gitclones/yay-bin/yay-bin* -print0 | xargs pacman -U --noconfirm
+			YAY_PKG=$(find /mnt/home/"$ARCHUSER"/gitclones/yay-bin/ -name 'paru-bin*.pkg.tar.zst' | cut -c5-)
+			arch-chroot /mnt pacman -U --noconfirm "$YAY_PKG"
 			cd || exit
 			;;
 		esac
+		rm -r /mnt/home/"$ARCHUSER"/gitclones
 	fi
 
 	if $INSTALL_CHAOTIC_AUR; then
@@ -867,37 +888,39 @@ post_install() {
 	esac
 
 	### Self delete post install script ###
-	arch-chroot /mnt pacman -S --noconfirm zenity
-	mkdir -p /mnt/home/"$ARCHUSER"/.config/autostart
-	case $DESKTOP_TO_INSTALL in
-	1) ### KDE Plasma ###
+	arch-chroot /mnt pacman -S --noconfirm --needed zenity
+	if $INSTALL_DESKTOP_ENVIRONMENT; then
+		mkdir -p /mnt/home/"$ARCHUSER"/.config/autostart
+		case $DESKTOP_TO_INSTALL in
+		1) ### KDE Plasma ###
+			{
+				echo "[Desktop Entry]"
+				echo "Name=Post_Install_Autostarter"
+				echo "Exec=konsole -e 'bash -c \"/home/$ARCHUSER/Arch_Installer_Post_Install.sh; bash\"'"
+				echo "Type=Application"
+			} >/mnt/home/"$ARCHUSER"/.config/autostart/Post_Install_Autostarter.desktop
+			;;
+		2) ### GNOME ###
+			{
+				echo "[Desktop Entry]"
+				echo "Name=Post_Install_Autostarter"
+				echo "Exec=kgx -e 'bash -c \"/home/$ARCHUSER/Arch_Installer_Post_Install.sh; bash\"'"
+				echo "Type=Application"
+			} >/mnt/home/"$ARCHUSER"/.config/autostart/Post_Install_Autostarter.desktop
+			;;
+		esac
 		{
-			echo "[Desktop Entry]"
-			echo "Name=Post_Install_Autostarter"
-			echo "Exec=konsole -e 'bash -c \"/home/$ARCHUSER/Arch_Installer_Post_Install.sh; bash\"'"
-			echo "Type=Application"
-		} >/mnt/home/"$ARCHUSER"/.config/autostart/Post_Install_Autostarter.desktop
-		;;
-	2) ### GNOME ###
-		{
-			echo "[Desktop Entry]"
-			echo "Name=Post_Install_Autostarter"
-			echo "Exec=kgx -e 'bash -c \"/home/$ARCHUSER/Arch_Installer_Post_Install.sh; bash\"'"
-			echo "Type=Application"
-		} >/mnt/home/"$ARCHUSER"/.config/autostart/Post_Install_Autostarter.desktop
-		;;
-	esac
-	{
-		echo "rm /home/$ARCHUSER/.config/autostart/Post_Install_Autostarter.desktop"
-		printf 'zenity --info --text="Postinstall Complete.\nYou are advised to reboot now."\n'
-		echo "rm -- /home/$ARCHUSER/Arch_Installer_Post_Install.sh"
-	} >>/mnt/home/"$ARCHUSER"/Arch_Installer_Post_Install.sh
-	chmod +x /mnt/home/"$ARCHUSER"/Arch_Installer_Post_Install.sh
+			echo "rm /home/$ARCHUSER/.config/autostart/Post_Install_Autostarter.desktop"
+			printf 'zenity --info --text="Postinstall Complete.\nYou are advised to reboot now."\n'
+			echo "rm -- /home/$ARCHUSER/Arch_Installer_Post_Install.sh"
+		} >>/mnt/home/"$ARCHUSER"/Arch_Installer_Post_Install.sh
+		chmod +x /mnt/home/"$ARCHUSER"/Arch_Installer_Post_Install.sh
+	fi
 
 	### Fix permissions on /home/$ARCHUSER ###
 	arch-chroot /mnt chown -hR "$ARCHUSER":"$ARCHUSER" /home/"$ARCHUSER"
 
-	printf "\nPostinstall ends now\n\n"
+	printf "\nPostinstall ends now\n"
 }
 
 additional_drivers() {
@@ -948,10 +971,8 @@ if dialog --defaultno --title "Arch installer by zweiler2" --yesno 'Do you want 
 	additional_packages
 	post_install
 	additional_drivers
-	printf "\nInstallation finished! You may reboot now, or type \"arch-chroot /mnt\" to make further changes\n"
+	dialog --title "Arch installer by zweiler2" --msgbox "Installation finished! \nYou may reboot now, or type \"arch-chroot /mnt\" to make further changes" 6 74
 	echo "End time: $(date)"
-	echo 'Press any key to exit...'
-	read -r -s
 	exit 0
 else
 	printf "Exiting installer..."
