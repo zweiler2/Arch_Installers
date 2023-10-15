@@ -607,10 +607,23 @@ base_os_install() {
 	if ! $EXT4; then
 		arch-chroot /mnt pacman -S --noconfirm grub-btrfs
 	fi
+	mkdir /mnt/etc/pacman.d/hooks 2>/dev/null
 	if $EFI_SYSTEM; then
 		if arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id="Arch-Linux"; then
 			arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
 			printf "\nBootloader install successful\n"
+			{
+				echo "[Trigger]"
+				echo "Operation=Upgrade"
+				echo "Type=Package"
+				echo "Target=grub"
+				echo
+				echo "[Action]"
+				echo "Description=Reinstall and Update GRUB"
+				echo "When=PostTransaction"
+				echo "NeedsTargets"
+				echo "Exec=/bin/sh -c 'grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=Arch-Linux --removable && sudo grub-mkconfig -o /boot/grub/grub.cfg'"
+			} >/mnt/etc/pacman.d/hooks/grub.hook
 		else
 			printf "\nBootloader install failed!\n"
 		fi
@@ -618,6 +631,18 @@ base_os_install() {
 		if arch-chroot /mnt grub-install --target=i386-pc "$INSTALLDEVICE"; then
 			arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
 			printf "\nBootloader install successful\n"
+			{
+				echo "[Trigger]"
+				echo "Operation=Upgrade"
+				echo "Type=Package"
+				echo "Target=grub"
+				echo
+				echo "[Action]"
+				echo "Description=Reinstall and Update GRUB"
+				echo "When=PostTransaction"
+				echo "NeedsTargets"
+				echo "Exec=/bin/sh -c 'grub-install --target=i386-pc $INSTALLDEVICE && sudo grub-mkconfig -o /boot/grub/grub.cfg'"
+			} >/mnt/etc/pacman.d/hooks/grub.hook
 		else
 			printf "\nBootloader install failed!\n"
 		fi
