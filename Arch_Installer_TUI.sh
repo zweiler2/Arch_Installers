@@ -865,7 +865,7 @@ base_os_install() {
 	echo -e "${ARCHPASS}\n${ARCHPASS}" | arch-chroot /mnt passwd "${ARCHUSER}"
 	echo "${ARCHUSER} ALL=(ALL) ALL" >/mnt/etc/sudoers.d/"${ARCHUSER}"
 	chmod 0440 /mnt/etc/sudoers.d/"${ARCHUSER}"
-	arch-chroot /mnt usermod -a -G wheel "${ARCHUSER}"
+	arch-chroot /mnt usermod -G wheel -a "${ARCHUSER}"
 
 	### Set up hosts ###
 	printf "Set up hosts...\n"
@@ -1086,6 +1086,8 @@ additional_packages() {
 
 post_install() {
 	printf "\nPostinstall begins now\n\n"
+
+	usermod -G realtime -a "$ARCHUSER"
 
 	### Fix USB file transfer progress not showing correctly ###
 	mkdir /mnt/etc/sysctl.d 2>/dev/null
