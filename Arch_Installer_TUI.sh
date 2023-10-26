@@ -515,6 +515,7 @@ partition_info_gathering() {
 	### Ask for automatic partitioning ###
 	if dialog --title "Partitioning" --yesno "Do you want to manually partition your drive?\nIf you choose to manually partition you will get asked for your root, efi (if applicable) and (if you made one) home partition.\nWith the automatic partitioning you can only select a whole drive!" 8 70; then
 		MANUAL_PARTITIONING=true
+		EFI_PARTITION_REUSE=false
 		dialog --title "Partitioning" --msgbox "Get your partitions fully ready so that a system can be installed! \nMeaning that the partitions have to be formated, set esp and boot flag (and labeled if you like) correctly!\nOpening a new bash instance so you can use whatever tools you want.\nWhen you're done type exit." 9 71
 		bash
 
@@ -533,6 +534,7 @@ partition_info_gathering() {
 				dialog --title "Select ROOT partition" --msgbox "You didn't select a root partition,\nplease do so now." 6 39
 			else
 				ROOT_PARTITION="/dev/${ROOT_PARTITION}"
+				rootPartNum=$($ROOT_PARTITION | grep -Po '.(?=.{0}$)')
 				break
 			fi
 		done
@@ -554,7 +556,13 @@ partition_info_gathering() {
 				elif [[ "/dev/${EFI_PARTITION}" = "$ROOT_PARTITION" ]]; then
 					dialog --title "Partitioning" --msgbox "This is your root partition. Choose another one..." 0 0
 				elif [[ "/dev/${EFI_PARTITION}" != "$ROOT_PARTITION" ]]; then
+					if dialog --defaultno --title "EFI" --yesno 'Do you want to format this efi partition?' 0 0; then
+						EFI_PARTITION_REUSE=false
+					else
+						EFI_PARTITION_REUSE=true
+					fi
 					EFI_PARTITION="/dev/${EFI_PARTITION}"
+					efiPartNum=$($EFI_PARTITION | grep -Po '.(?=.{0}$)')
 					break
 				fi
 			done
@@ -581,6 +589,7 @@ partition_info_gathering() {
 					dialog --title "Partitioning" --msgbox "This is your efi partition. Choose another one..." 5 55
 				elif [[ "/dev/${HOME_PARTITION}" != "$ROOT_PARTITION" && "/dev/${HOME_PARTITION}" != "$EFI_PARTITION" ]]; then
 					HOME_PARTITION="/dev/${HOME_PARTITION}"
+					homePartNum=$($HOME_PARTITION | grep -Po '.(?=.{0}$)')
 					break
 				fi
 			done
@@ -715,69 +724,56 @@ auto_partitioning() {
 	fi
 
 	### Actual partitioning ###
-	if $EFI_SYSTEM; then
-		if ! $EFI_PARTITION_REUSE; then
-			parted "${INSTALLDEVICE}" mkpart esp fat32 "${efiStart}"M "${efiEnd}"M
-			parted "${INSTALLDEVICE}" set "${efiPartNum}" boot on
-			parted "${INSTALLDEVICE}" set "${efiPartNum}" esp on
-			EFI_PARTITION="${INSTALLDEVICE}${efiPartNum}"
-			yes | mkfs.vfat -F 32 -n EFI "${EFI_PARTITION}"
-		fi
-		if $CREATEHOMEPARTITION; then
-			if $EXT4; then
-				parted "${INSTALLDEVICE}" mkpart archlinux ext4 "${rootStart}"M "${rootEnd}"M # ROOT partition
-				parted "${INSTALLDEVICE}" mkpart home ext4 "${rootEnd}"M 100%                 # HOME partition
-				HOME_PARTITION="${INSTALLDEVICE}${homePartNum}"
-				yes | mkfs.ext4 -L HOME "${HOME_PARTITION}"
-			else
-				parted "${INSTALLDEVICE}" mkpart archlinux btrfs "${rootStart}"M "${rootEnd}"M # ROOT partition
-				parted "${INSTALLDEVICE}" mkpart home btrfs "${rootEnd}"M 100%                 # HOME partition
-				HOME_PARTITION="${INSTALLDEVICE}${homePartNum}"
-				yes | mkfs.btrfs -f -L HOME "${HOME_PARTITION}"
-			fi
-		else
-			if $EXT4; then
-				parted "${INSTALLDEVICE}" mkpart archlinux ext4 "${rootStart}"M 100% # ROOT partition
-			else
-				parted "${INSTALLDEVICE}" mkpart archlinux btrfs "${rootStart}"M 100% # ROOT partition
-			fi
-		fi
-		if $EXT4; then
-			ROOT_PARTITION="${INSTALLDEVICE}${rootPartNum}"
-			yes | mkfs.ext4 -L ROOT "$ROOT_PARTITION"
-		else
-			ROOT_PARTITION="${INSTALLDEVICE}${rootPartNum}"
-			yes | mkfs.btrfs -f -L ROOT "$ROOT_PARTITION"
-		fi
-	else
-		if $CREATEHOMEPARTITION; then
-			if $EXT4; then
-				parted "${INSTALLDEVICE}" mkpart primary ext4 "${rootStart}"M "${rootEnd}"M # ROOT partition
-				parted "${INSTALLDEVICE}" mkpart primary ext4 "${rootEnd}"M 100%            # HOME partition
-				HOME_PARTITION="${INSTALLDEVICE}${homePartNum}"
-				yes | mkfs.ext4 -L HOME "${HOME_PARTITION}"
-			else
-				parted "${INSTALLDEVICE}" mkpart primary btrfs "${rootStart}"M "${rootEnd}"M # ROOT partition
-				parted "${INSTALLDEVICE}" mkpart primary btrfs "${rootEnd}"M 100%            # HOME partition
-				HOME_PARTITION="${INSTALLDEVICE}${homePartNum}"
-				yes | mkfs.btrfs -f -L HOME "${HOME_PARTITION}"
-			fi
-		else
-			if $EXT4; then
-				parted "${INSTALLDEVICE}" mkpart primary ext4 "${rootStart}"M 100% # ROOT partition
-			else
-				parted "${INSTALLDEVICE}" mkpart primary btrfs "${rootStart}"M 100% # ROOT partition
-			fi
-		fi
-		if $EXT4; then
-			ROOT_PARTITION="${INSTALLDEVICE}${rootPartNum}"
-			yes | mkfs.ext4 -L ROOT "$ROOT_PARTITION"
-		else
-			ROOT_PARTITION="${INSTALLDEVICE}${rootPartNum}"
-			yes | mkfs.btrfs -f -L ROOT "$ROOT_PARTITION"
-		fi
-		parted "${INSTALLDEVICE}" set "${rootPartNum}" boot on
+	if $EFI_SYSTEM && ! $EFI_PARTITION_REUSE; then
+		parted "${INSTALLDEVICE}" mkpart esp fat32 "${efiStart}"M "${efiEnd}"M # EFI partition
+		EFI_PARTITION="${INSTALLDEVICE}${efiPartNum}"
 	fi
+	if $CREATEHOMEPARTITION; then
+		if $EXT4; then
+			parted "${INSTALLDEVICE}" mkpart archlinux ext4 "${rootStart}"M "${rootEnd}"M # ROOT partition
+			parted "${INSTALLDEVICE}" mkpart home ext4 "${rootEnd}"M 100%                 # HOME partition
+		else
+			parted "${INSTALLDEVICE}" mkpart archlinux btrfs "${rootStart}"M "${rootEnd}"M # ROOT partition
+			parted "${INSTALLDEVICE}" mkpart home btrfs "${rootEnd}"M 100%                 # HOME partition
+		fi
+		HOME_PARTITION="${INSTALLDEVICE}${homePartNum}"
+	else
+		if $EXT4; then
+			parted "${INSTALLDEVICE}" mkpart archlinux ext4 "${rootStart}"M 100% # ROOT partition
+		else
+			parted "${INSTALLDEVICE}" mkpart archlinux btrfs "${rootStart}"M 100% # ROOT partition
+		fi
+	fi
+	ROOT_PARTITION="${INSTALLDEVICE}${rootPartNum}"
+}
+
+partition_formatting() {
+	### Set partition layout ###
+	if echo "${INSTALLDEVICE}" | grep -q -P "^/dev/(nvme|loop|mmcblk)"; then
+		INSTALLDEVICE="${INSTALLDEVICE}p"
+	fi
+	### EFI partition formatting ###
+	if $EFI_SYSTEM && ! $EFI_PARTITION_REUSE; then
+		yes | mkfs.vfat -F 32 -n EFI "$EFI_PARTITION"
+	fi
+	### ROOT partition formatting ###
+	if $EXT4; then
+		yes | mkfs.ext4 -L ROOT "$ROOT_PARTITION"
+	else
+		yes | mkfs.btrfs -f -L ROOT "$ROOT_PARTITION"
+	fi
+	### HOME partition formatting ###
+	if $CREATEHOMEPARTITION; then
+		if $EXT4; then
+			yes | mkfs.ext4 -L HOME "${HOME_PARTITION}"
+		else
+			yes | mkfs.btrfs -f -L HOME "${HOME_PARTITION}"
+		fi
+	fi
+	### Set boot flags ###
+	$EFI_SYSTEM || parted "${INSTALLDEVICE}" set "${rootPartNum}" boot on
+	$EFI_SYSTEM && parted "${INSTALLDEVICE}" set "${efiPartNum}" boot on
+	$EFI_SYSTEM && parted "${INSTALLDEVICE}" set "${efiPartNum}" esp on
 }
 
 base_os_install() {
@@ -1292,6 +1288,7 @@ if dialog --defaultno --title "Arch installer by zweiler2" --yesno 'Do you want 
 	if ! $MANUAL_PARTITIONING; then
 		auto_partitioning
 	fi
+	partition_formatting
 	base_os_install
 	if $INSTALL_DESKTOP_ENVIRONMENT; then
 		xorg_graphics_install
