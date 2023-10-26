@@ -900,7 +900,7 @@ base_os_install() {
 	fi
 	mkdir /mnt/etc/pacman.d/hooks 2>/dev/null
 	if $EFI_SYSTEM; then
-		if arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id="Arch-Linux"; then
+		if arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id="Arch-Linux" --removable; then
 			arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
 			printf "\nBootloader install successful\n"
 			{
