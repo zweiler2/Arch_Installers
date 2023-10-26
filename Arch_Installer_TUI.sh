@@ -156,9 +156,11 @@ make_menu "$(lsblk -lno name,size,model,serial,type | grep disk | sed s/disk//g 
 DEVICELIST_ARRAY=("${menu_list[@]}")
 menu_list=()
 
-make_menu "$(lsblk -lno name,size,model,serial,type | grep part | sed s/part//g | sed 's/  */ /g')"
-PARTLIST_ARRAY=("${menu_list[@]}")
-menu_list=()
+make_partlist_array() {
+	make_menu "$(lsblk -lno name,size,model,serial,type | grep part | sed s/part//g | sed 's/  */ /g')"
+	PARTLIST_ARRAY=("${menu_list[@]}")
+	menu_list=()
+}
 
 information_gathering() {
 	### Ask for keyboard layout while using the installer ###
@@ -517,6 +519,7 @@ partition_info_gathering() {
 		bash
 
 		### Ask for root partition ###
+		make_partlist_array
 		while true; do
 			if ! ROOT_PARTITION=$(dialog --stdout --title "Select ROOT partition" --menu "Select your root partition" 0 0 0 "${PARTLIST_ARRAY[@]}"); then
 				if dialog --title "Select ROOT partition" --defaultno --yesno "Do you want to launch a subshell for doing the partitioning again?" 6 41; then
@@ -535,6 +538,7 @@ partition_info_gathering() {
 		done
 
 		### Ask for efi partition ###
+		make_partlist_array
 		if $EFI_SYSTEM; then
 			while true; do
 				if ! EFI_PARTITION=$(dialog --stdout --title "Select EFI partition" --menu "Select your efi partition" 0 0 0 "${PARTLIST_ARRAY[@]}"); then
@@ -557,6 +561,7 @@ partition_info_gathering() {
 		fi
 
 		### Ask for home partition ###
+		make_partlist_array
 		if dialog --title "Partitioning" --yesno "Did you make a seperate /home partition?" 5 45; then
 			CREATEHOMEPARTITION=true
 			while true; do
@@ -602,6 +607,7 @@ partition_info_gathering() {
 		done
 
 		### Ask for existing EFI partition ###
+		make_partlist_array
 		if $EFI_SYSTEM; then
 			if dialog --defaultno --title "EFI" --yesno 'Do you want to use an existing efi partition?' 0 0; then
 				EFI_PARTITION_REUSE=true
