@@ -542,7 +542,7 @@ base_os_install() {
 	### Set hwclock ###
 	printf "\nSyncing HW clock\n\n"
 	arch-chroot /mnt hwclock --systohc
-	systemctl enable systemd-timesyncd
+	arch-chroot /mnt systemctl enable systemd-timesyncd
 
 	### Set timezone ###
 	arch-chroot /mnt ln -sf /usr/share/zoneinfo/"$TIMEZONE" /etc/localtime
