@@ -560,6 +560,9 @@ base_os_install() {
 	### Set hostname ###
 	echo "$HOSTNAME" >/mnt/etc/hostname
 
+	### Enable fstrim.timer ###
+	arch-chroot /mnt systemctl enable fstrim.timer
+
 	### Set up pacman multilib ###
 	if $MULTILIB_INSTALLATION; then
 		arch-chroot /mnt sed -i "/\[multilib\]/,/Include/"'s/^#//' /etc/pacman.conf
