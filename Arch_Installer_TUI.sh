@@ -176,6 +176,7 @@ information_gathering() {
 	done
 	menu_list=()
 	loadkeys "$TEMP_KB_LAYOUT"
+	sleep 3
 
 	### Ask for the timezone ###
 	TIMEZONE="$(curl --fail https://ipapi.co/timezone)"
