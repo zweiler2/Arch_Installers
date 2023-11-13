@@ -816,7 +816,9 @@ base_os_install() {
 	fi
 
 	### Installing base packages ###
+	sed -i 's/#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf
 	pacstrap -K /mnt base base-devel "$KERNEL" "${KERNEL}"-headers linux-firmware sudo bash-completion mtools dosfstools fwupd power-profiles-daemon cpupower btrfs-progs pacman-contrib
+	sed -i 's/#ParallelDownloads/ParallelDownloads/' /mnt/etc/pacman.conf
 
 	### Generate fstab ###
 	printf "\nBase system installation done, generating fstab...\n\n"
