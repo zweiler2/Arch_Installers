@@ -1058,7 +1058,7 @@ desktop_install() {
 		;;
 	2)
 		printf "Installing Desktop Environment...(GNOME)"
-		arch-chroot /mnt pacman -S --noconfirm gnome gnome-shell-extensions polkit polkit-gnome p7zip unrar gufw gvfs-goa dconf-editor gnome-shell-extensions gnome-themes-extra gnome-shell-extension-appindicator gnome-firmware
+		arch-chroot /mnt pacman -S --noconfirm gnome gnome-shell-extensions polkit polkit-gnome gufw gvfs-goa dconf-editor gnome-themes-extra gnome-shell-extension-appindicator gnome-firmware
 		arch-chroot /mnt systemctl enable gdm.service
 		;;
 	esac
