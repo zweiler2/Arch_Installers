@@ -1094,7 +1094,7 @@ additional_packages() {
 post_install() {
 	printf "\nPostinstall begins now\n\n"
 
-	usermod -G realtime -a "$ARCHUSER"
+	arch-chroot /mnt usermod -a "$ARCHUSER" -G realtime
 
 	### Fix USB file transfer progress not showing correctly ###
 	mkdir /mnt/etc/sysctl.d 2>/dev/null
