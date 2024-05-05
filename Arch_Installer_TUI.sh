@@ -1075,7 +1075,7 @@ audio_install() {
 
 additional_packages() {
 	echo "Installing additional_packages..."
-	arch-chroot /mnt pacman -S --noconfirm --needed nano vim htop wget iwd wireless_tools wpa_supplicant smartmontools xdg-utils neofetch lshw git p7zip unrar unarchiver lzop lrzip libva libva-utils llvm bat realtime-privileges
+	arch-chroot /mnt pacman -S --noconfirm --needed nano vim htop wget iwd wireless_tools wpa_supplicant smartmontools xdg-utils neofetch lshw git p7zip unrar unarchiver lzop lrzip libva libva-utils llvm bat realtime-privileges less informant
 	$INSTALL_DESKTOP_ENVIRONMENT && arch-chroot /mnt pacman -S --noconfirm --needed firefox
 }
 
