@@ -1054,6 +1054,7 @@ desktop_install() {
 	1)
 		printf "Installing Desktop Environment...(KDE Plasma)"
 		arch-chroot /mnt pacman -S --noconfirm plasma kde-system konsole kate ark kcalc spectacle gwenview okular kcolorchooser kdeconnect kdenetwork-filesharing kdegraphics-thumbnailers dolphin-plugins ffmpegthumbs plasma-workspace-wallpapers polkit-qt5 packagekit packagekit-qt5 packagekit-qt6 kio5-extras kio-extras
+		$INSTALL_PLYMOUTH || arch-chroot /mnt pacman -Rs --noconfirm plymouth breeze-plymouth
 		arch-chroot /mnt systemctl enable sddm.service
 		;;
 	2)
