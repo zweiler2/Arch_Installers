@@ -1096,7 +1096,7 @@ post_install() {
 	fi
 
 	if $INSTALL_BLUETOOTH; then
-		arch-chroot /mnt pacman -S --noconfirm bluez bluez-utils
+		arch-chroot /mnt pacman -S --noconfirm bluez bluez-tools
 		arch-chroot /mnt systemctl enable bluetooth.service
 	fi
 
@@ -1121,6 +1121,7 @@ post_install() {
 	if $INSTALL_PRINTING; then
 		arch-chroot /mnt pacman -S --noconfirm cups
 		arch-chroot /mnt systemctl enable --now cups.service
+		$INSTALL_BLUETOOTH && arch-chroot /mnt pacman -S --noconfirm bluez-cups
 	fi
 
 	if $INSTALL_AUR_HELPER; then
