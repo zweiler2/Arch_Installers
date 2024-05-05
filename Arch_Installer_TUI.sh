@@ -1053,7 +1053,7 @@ desktop_install() {
 	case $DESKTOP_TO_INSTALL in
 	1)
 		printf "Installing Desktop Environment...(KDE Plasma)"
-		arch-chroot /mnt pacman -S --noconfirm plasma-meta konsole kate dolphin ark kcalc spectacle sddm sddm-kcm plasma-wayland-session egl-wayland polkit polkit-qt5 polkit-kde-agent partitionmanager packagekit-qt5
+		arch-chroot /mnt pacman -S --noconfirm plasma kde-system konsole kate ark kcalc spectacle gwenview okular kcolorchooser kdeconnect kdenetwork-filesharing kdegraphics-thumbnailers dolphin-plugins ffmpegthumbs plasma-workspace-wallpapers polkit-qt5 packagekit packagekit-qt5 packagekit-qt6 kio5-extras kio-extras
 		arch-chroot /mnt systemctl enable sddm.service
 		;;
 	2)
