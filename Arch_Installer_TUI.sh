@@ -999,9 +999,7 @@ xorg_graphics_install() {
 		if $NVIDIA_PROPRIETARY; then
 			printf "\nInstalling nvidia propietary driver...\n"
 			arch-chroot /mnt pacman -S --noconfirm "$NVIDIA_PACKAGE" nvidia-settings
-			if $MULTILIB_INSTALLATION; then
-				arch-chroot /mnt pacman -S --noconfirm lib32-nvidia-utils
-			fi
+			$MULTILIB_INSTALLATION && arch-chroot /mnt pacman -S --noconfirm lib32-nvidia-utils
 			sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/&nvidia-drm.modeset=1 /' /mnt/etc/default/grub
 			sed -i 's/MODULES=(/&nvidia nvidia_modeset nvidia_uvm nvidia_drm/' /mnt/etc/mkinitcpio.conf
 			arch-chroot /mnt mkinitcpio -P
@@ -1027,9 +1025,7 @@ xorg_graphics_install() {
 		else
 			echo "Installing nvidia open source driver..."
 			arch-chroot /mnt pacman -S --noconfirm mesa xf86-video-nouveau
-			if $MULTILIB_INSTALLATION; then
-				arch-chroot /mnt pacman -S --noconfirm lib32-mesa
-			fi
+			$MULTILIB_INSTALLATION && arch-chroot /mnt pacman -S --noconfirm lib32-mesa
 		fi
 	fi
 	if $MESA_AMBER; then
