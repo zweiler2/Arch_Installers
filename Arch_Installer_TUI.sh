@@ -857,6 +857,9 @@ base_os_install() {
 	### Set keyboard layout ###
 	echo "KEYMAP=$KEYBOARD_LAYOUT" >>/mnt/etc/vconsole.conf
 
+	## Set tty font ###
+	echo "FONT=ter-132b" >>/mnt/etc/vconsole.conf
+
 	### Set hostname ###
 	echo "$HOSTNAME" >/mnt/etc/hostname
 
