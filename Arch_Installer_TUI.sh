@@ -961,18 +961,6 @@ base_os_install() {
 		arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
 	fi
 
-	### Set up flatpak ###
-	if $INSTALL_FLATPAK; then
-		case $DESKTOP_TO_INSTALL in
-		1)
-			arch-chroot /mnt pacman -S --noconfirm xdg-desktop-portal-kde flatpak
-			;;
-		2)
-			arch-chroot /mnt pacman -S --noconfirm xdg-desktop-portal-gnome xdg-desktop-portal-gtk flatpak
-			;;
-		esac
-	fi
-
 	### Set up firewall ###
 	if $INSTALL_FIREWALL; then
 		arch-chroot /mnt systemctl disable iptables.service
@@ -1110,6 +1098,17 @@ post_install() {
 	if $INSTALL_BLUETOOTH; then
 		arch-chroot /mnt pacman -S --noconfirm bluez bluez-utils
 		arch-chroot /mnt systemctl enable bluetooth.service
+	fi
+
+	if $INSTALL_FLATPAK; then
+		case $DESKTOP_TO_INSTALL in
+		1)
+			arch-chroot /mnt pacman -S --noconfirm flatpak xdg-desktop-portal-kde flatpak-kcm
+			;;
+		2)
+			arch-chroot /mnt pacman -S --noconfirm flatpak xdg-desktop-portal-gnome xdg-desktop-portal-gtk
+			;;
+		esac
 	fi
 
 	if $INSTALL_ANTIVIRUS; then
