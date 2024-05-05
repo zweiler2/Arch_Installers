@@ -22,7 +22,7 @@ check_system() {
 	fi
 
 	## Check if AMD GPU user ###
-	if [[ "$(lspci -v | grep VGA | sed -nE "s/.*(AMD) .*/\1/p")" = "AMD" ]]; then
+	if [[ "$(lspci -v | grep VGA | sed -nE "s/.*(\[AMD\/ATI\]) .*/\1/p")" = "[AMD/ATI]" ]]; then
 		AMD_USER=true
 		if dialog --cr-wrap --title "AMD GPU" --yesno "AMD GPU found. These graphics cards were found on your system:\n\n$(lspci -k | grep -A 2 -E "(VGA|3D)")\n\nDo you want to install the old non-Gallium3D mesa drivers (mesa-amber/mesa 21.3.9).\nSelect yes only if you have a really old GPU." 0 0; then
 			MESA_AMBER=true
