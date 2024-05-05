@@ -799,7 +799,7 @@ base_os_install() {
 		mount -o subvol=@ "${ROOT_PARTITION}" /mnt
 		mkdir -p /mnt/{efi,var/log,var/cache/pacman/pkg,tmp,swap}
 		mount -o subvol=@log "${ROOT_PARTITION}" /mnt/var/log
-		mount -o subvol=@pkg "${ROOT_PARTITION}" /mnt/var/cache/pacman/pkg/
+		mount -o subvol=@pkg "${ROOT_PARTITION}" /mnt/var/cache/pacman/pkg
 		mount -o subvol=@tmp "${ROOT_PARTITION}" /mnt/tmp
 		if ! $CREATEHOMEPARTITION; then
 			mount --mkdir -o subvol=@home "${ROOT_PARTITION}" /mnt/home
@@ -874,10 +874,10 @@ base_os_install() {
 	printf "\nCreating user %s${ARCHUSER}...\n"
 	echo -e "${ROOTPASS}\n${ROOTPASS}" | arch-chroot /mnt passwd root
 	arch-chroot /mnt useradd --create-home "${ARCHUSER}"
-	echo -e "${ARCHPASS}\n${ARCHPASS}" | arch-chroot /mnt passwd "${ARCHUSER}"
+	echo -e "${ARCHPASS}\n${ARCHPASS}" | arch-chroot /mnt passwd "$ARCHUSER"
 	echo "${ARCHUSER} ALL=(ALL) ALL" >/mnt/etc/sudoers.d/"${ARCHUSER}"
 	chmod 0440 /mnt/etc/sudoers.d/"${ARCHUSER}"
-	arch-chroot /mnt usermod -G wheel -a "${ARCHUSER}"
+	arch-chroot /mnt usermod -a "$ARCHUSER" -G wheel
 
 	### Set up hosts ###
 	printf "Set up hosts...\n"
@@ -1043,26 +1043,18 @@ xorg_graphics_install() {
 	fi
 	if $MESA_AMBER; then
 		arch-chroot /mnt pacman -S --noconfirm mesa-amber
-		if $MULTILIB_INSTALLATION; then
-			arch-chroot /mnt pacman -S --noconfirm lib32-mesa-amber
-		fi
+		$MULTILIB_INSTALLATION && arch-chroot /mnt pacman -S --noconfirm lib32-mesa-amber
 	else
 		arch-chroot /mnt pacman -S --noconfirm mesa
-		if $MULTILIB_INSTALLATION; then
-			arch-chroot /mnt pacman -S --noconfirm lib32-mesa
-		fi
+		$MULTILIB_INSTALLATION && arch-chroot /mnt pacman -S --noconfirm lib32-mesa
 	fi
 	if $AMD_USER; then
 		arch-chroot /mnt pacman -S --noconfirm xf86-video-amdgpu vulkan-radeon libva-mesa-driver mesa-vdpau
-		if $MULTILIB_INSTALLATION; then
-			arch-chroot /mnt pacman -S --noconfirm lib32-vulkan-radeon lib32-libva-mesa-driver lib32-mesa-vdpau
-		fi
+		$MULTILIB_INSTALLATION && arch-chroot /mnt pacman -S --noconfirm lib32-vulkan-radeon lib32-libva-mesa-driver lib32-mesa-vdpau
 	fi
 	if $INTEL_USER; then
 		arch-chroot /mnt pacman -S --noconfirm xf86-video-intel vulkan-intel intel-media-driver libva-intel-driver intel-gpu-tools
-		if $MULTILIB_INSTALLATION; then
-			arch-chroot /mnt pacman -S --noconfirmlib32-vulkan-intel lib32-libva-intel-driver
-		fi
+		$MULTILIB_INSTALLATION && arch-chroot /mnt pacman -S --noconfirm lib32-vulkan-intel lib32-libva-intel-driver
 	fi
 }
 
@@ -1084,14 +1076,14 @@ desktop_install() {
 audio_install() {
 	printf "Installing Audio packages (pipewire, wireplumer,...)"
 	arch-chroot /mnt pacman -S --noconfirm --needed pipewire pipewire-alsa pipewire-jack pipewire-pulse gst-plugin-pipewire libpulse wireplumber
-	mkdir -p /mnt/home/"$ARCHUSER"/.config/systemd/user/default.target.wants /mnt/home/"$ARCHUSER"/.config/systemd/user/sockets.target.wants
-	chown -hR "$ARCHUSER":"$ARCHUSER" /mnt/home/"$ARCHUSER"/.config/systemd
-	ln -s /usr/lib/systemd/user/pipewire-pulse.service /mnt/home/"$ARCHUSER"/.config/systemd/user/default.target.wants/pipewire-pulse.service
-	ln -s /usr/lib/systemd/user/pipewire-pulse.socket /mnt/home/"$ARCHUSER"/.config/systemd/user/sockets.target.wants/pipewire-pulse.socket
+	mkdir -p "/mnt/home/${ARCHUSER}/.config/systemd/user/default.target.wants" "/mnt/home/${ARCHUSER}/.config/systemd/user/sockets.target.wants"
+	chown -hR "${ARCHUSER}:${ARCHUSER}" "/mnt/home/${ARCHUSER}/.config/systemd"
+	ln -s /usr/lib/systemd/user/pipewire-pulse.service "/mnt/home/${ARCHUSER}/.config/systemd/user/default.target.wants/pipewire-pulse.service"
+	ln -s /usr/lib/systemd/user/pipewire-pulse.socket "/mnt/home/${ARCHUSER}/.config/systemd/user/sockets.target.wants/pipewire-pulse.socket"
 }
 
 additional_packages() {
-	printf "\nInstalling additional_packages...\n"
+	echo "Installing additional_packages..."
 	arch-chroot /mnt pacman -S --noconfirm --needed nano vim htop wget iwd wireless_tools wpa_supplicant smartmontools xdg-utils neofetch lshw git p7zip unrar unarchiver lzop lrzip libva libva-utils llvm bat realtime-privileges
 	$INSTALL_DESKTOP_ENVIRONMENT && arch-chroot /mnt pacman -S --noconfirm --needed firefox
 }
